@@ -2,6 +2,7 @@ package org.growforge.jalmarg.web;
 
 import org.growforge.jalmarg.dto.Dtos.ReportView;
 import org.growforge.jalmarg.model.Enums.DepthLevel;
+import org.growforge.jalmarg.security.AuthUser;
 import org.growforge.jalmarg.service.ReportService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -43,13 +44,13 @@ public class ReportController {
         String type = null;
         if (photo != null && !photo.isEmpty()) {
             type = photo.getContentType();
-            if (type == null || !type.startsWith("image/")) {
-                throw new IllegalArgumentException("Photo must be an image");
+            if (type == null || !(type.equals("image/jpeg") || type.equals("image/png") || type.equals("image/webp"))) {
+                throw new IllegalArgumentException("Photo must be a JPEG, PNG or WebP image");
             }
             bytes = photo.getBytes();
         }
         return ReportView.of(reportService.create(new ReportService.NewReport(
-                latitude, longitude, locationName, area, level, note, bytes, type)));
+                latitude, longitude, locationName, area, level, note, bytes, type, AuthUser.current().id())));
     }
 
     /** All reports currently active on the map. Optional lat/lng/radiusKm to filter. */
@@ -77,12 +78,12 @@ public class ReportController {
     /** "Still flooded" from someone passing by. */
     @PostMapping("/{id}/confirm")
     public ReportView confirm(@PathVariable long id) {
-        return ReportView.of(reportService.confirm(id));
+        return ReportView.of(reportService.confirm(id, AuthUser.current().id()));
     }
 
     /** "Water has cleared" from someone passing by. */
     @PostMapping("/{id}/clear")
     public ReportView clear(@PathVariable long id) {
-        return ReportView.of(reportService.clear(id));
+        return ReportView.of(reportService.clear(id, AuthUser.current().id()));
     }
 }

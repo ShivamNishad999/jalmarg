@@ -20,6 +20,23 @@ public class ErrorHandler {
         return ResponseEntity.badRequest().body(Map.of("error", e.getMessage() == null ? "Bad request" : e.getMessage()));
     }
 
+    @ExceptionHandler(ApiException.class)
+    public ResponseEntity<Map<String, String>> api(ApiException e) {
+        return ResponseEntity.status(e.getStatus()).body(Map.of("error", e.getMessage(), "code", e.getCode()));
+    }
+
+    @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, String>> invalid(org.springframework.web.bind.MethodArgumentNotValidException e) {
+        String msg = e.getBindingResult().getFieldErrors().stream().findFirst()
+                .map(f -> f.getField() + ": " + f.getDefaultMessage()).orElse("Invalid request");
+        return ResponseEntity.badRequest().body(Map.of("error", msg, "code", "VALIDATION"));
+    }
+
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<Map<String, String>> denied(org.springframework.security.access.AccessDeniedException e) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Your account is not allowed to do this.", "code", "FORBIDDEN"));
+    }
+
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<Map<String, String>> tooBig(MaxUploadSizeExceededException e) {
         return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(Map.of("error", "Photo is too large (max 10 MB)"));

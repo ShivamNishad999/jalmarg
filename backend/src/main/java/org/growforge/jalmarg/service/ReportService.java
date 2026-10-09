@@ -6,6 +6,8 @@ import org.growforge.jalmarg.model.Enums.ReportStatus;
 import org.growforge.jalmarg.model.Hotspot;
 import org.growforge.jalmarg.model.Report;
 import org.growforge.jalmarg.repo.ReportRepository;
+import org.growforge.jalmarg.repo.ReportConfirmationRepository;
+import org.growforge.jalmarg.model.ReportConfirmation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,15 +27,17 @@ public class ReportService {
     private static final Logger log = LoggerFactory.getLogger(ReportService.class);
 
     private final ReportRepository reports;
+    private final ReportConfirmationRepository confirmations;
     private final HotspotService hotspotService;
     private final StorageService storage;
     private final AiDepthService ai;
     private final int ttlHours;
 
-    public ReportService(ReportRepository reports, HotspotService hotspotService,
+    public ReportService(ReportRepository reports, ReportConfirmationRepository confirmations, HotspotService hotspotService,
                          StorageService storage, AiDepthService ai,
                          @Value("${jalmarg.reports.ttl-hours}") int ttlHours) {
         this.reports = reports;
+        this.confirmations = confirmations;
         this.hotspotService = hotspotService;
         this.storage = storage;
         this.ai = ai;
@@ -47,7 +51,7 @@ public class ReportService {
     /** Input for a new report (photo optional, depth level optional, but at least one needed). */
     public record NewReport(double latitude, double longitude, String locationName, String area,
                             DepthLevel depthLevel, String note,
-                            byte[] photo, String photoContentType) {}
+                            byte[] photo, String photoContentType, Long reporterId) {}
 
     @Transactional
     public Report create(NewReport in) throws IOException {
@@ -68,6 +72,7 @@ public class ReportService {
         r.setCreatedAt(now);
         r.setLastConfirmedAt(now);
         r.setStatus(ReportStatus.ACTIVE);
+        r.setReporterId(in.reporterId());
 
         if (in.photo() != null && in.photo().length > 0) {
             r.setPhotoKey(storage.save(in.photo(), in.photoContentType()));
@@ -124,6 +129,11 @@ public class ReportService {
     }
 
     @Transactional(readOnly = true)
+    public long countAll() {
+        return reports.count();
+    }
+
+    @Transactional(readOnly = true)
     public List<Report> active() {
         return reports.findByStatusOrderByCreatedAtDesc(ReportStatus.ACTIVE);
     }
@@ -146,10 +156,22 @@ public class ReportService {
         return reports.findById(id).orElseThrow(() -> new IllegalArgumentException("Report not found"));
     }
 
-    /** Someone passing by says "still flooded". Keeps the report alive. */
+    /**
+     * Someone passing by says "still flooded". One vote per person per report: voting again
+     * changes nothing; switching from "cleared" to "still flooded" moves the vote.
+     */
     @Transactional
-    public Report confirm(long id) {
+    public Report confirm(long id, long userId) {
         Report r = get(id);
+        var existing = confirmations.findByReportIdAndUserId(id, userId);
+        if (existing.isPresent() && existing.get().getKind() == ReportConfirmation.Kind.STILL_FLOODED) return r;
+        if (existing.isPresent()) {
+            existing.get().setKind(ReportConfirmation.Kind.STILL_FLOODED);
+            existing.get().setCreatedAt(Instant.now());
+            confirmations.save(existing.get());
+        } else {
+            confirmations.save(new ReportConfirmation(id, userId, ReportConfirmation.Kind.STILL_FLOODED, Instant.now()));
+        }
         r.setConfirmations(r.getConfirmations() + 1);
         r.setLastConfirmedAt(Instant.now());
         if (r.getStatus() != ReportStatus.ACTIVE) {
@@ -159,12 +181,41 @@ public class ReportService {
         return reports.save(r);
     }
 
-    /** Someone passing by says "water has cleared". */
+    /** Someone passing by says "water has cleared". Recorded once per person. */
     @Transactional
-    public Report clear(long id) {
+    public Report clear(long id, long userId) {
         Report r = get(id);
+        var existing = confirmations.findByReportIdAndUserId(id, userId);
+        if (existing.isPresent() && existing.get().getKind() == ReportConfirmation.Kind.CLEARED) return r;
+        if (existing.isPresent()) {
+            existing.get().setKind(ReportConfirmation.Kind.CLEARED);
+            existing.get().setCreatedAt(Instant.now());
+            confirmations.save(existing.get());
+        } else {
+            confirmations.save(new ReportConfirmation(id, userId, ReportConfirmation.Kind.CLEARED, Instant.now()));
+        }
         r.setStatus(ReportStatus.CLEARED);
         r.setClearedAt(Instant.now());
+        return reports.save(r);
+    }
+
+    /** Authority marks a report resolved (CLEARED) or active again, with a note. */
+    @Transactional
+    public Report authorityUpdate(long id, String status, String note) {
+        Report r = get(id);
+        ReportStatus st;
+        try {
+            st = ReportStatus.valueOf(status == null ? "" : status.trim().toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Status must be ACTIVE or CLEARED");
+        }
+        if (st == ReportStatus.EXPIRED) throw new IllegalArgumentException("Status must be ACTIVE or CLEARED");
+        r.setStatus(st);
+        Instant now = Instant.now();
+        if (st == ReportStatus.CLEARED) r.setClearedAt(now);
+        else { r.setClearedAt(null); r.setLastConfirmedAt(now); }
+        r.setAuthorityNote(trim(note, 500));
+        r.setStatusUpdatedAt(now);
         return reports.save(r);
     }
 

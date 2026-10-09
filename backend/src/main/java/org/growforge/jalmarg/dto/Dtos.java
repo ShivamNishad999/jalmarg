@@ -34,7 +34,9 @@ public final class Dtos {
             String status,
             Instant createdAt,
             Instant lastConfirmedAt,
-            boolean demo) {
+            boolean demo,
+            String authorityNote,
+            Instant statusUpdatedAt) {
 
         public static ReportView of(Report r) {
             Hotspot h = r.getHotspot();
@@ -52,7 +54,8 @@ public final class Dtos {
                     r.getAiSummary(), r.getAiSummaryHi(), r.getAiConfidence(),
                     r.getNote(), r.getConfirmations(),
                     r.getStatus().name(), r.getCreatedAt(), r.getLastConfirmedAt(),
-                    r.getDepthSource() == org.growforge.jalmarg.model.Enums.DepthSource.DEMO);
+                    r.getDepthSource() == org.growforge.jalmarg.model.Enums.DepthSource.DEMO,
+                    r.getAuthorityNote(), r.getStatusUpdatedAt());
         }
     }
 
@@ -92,6 +95,11 @@ public final class Dtos {
             long totalReports, long activeNow, long hotspots, long reportsLast7Days,
             List<DayCount> perDay, java.util.Map<String, Long> bySeverity,
             java.util.Map<String, Long> byArea, List<HotspotView> topHotspots) {}
+
+    public record StatusUpdate(String status, String note) {}
+
+    public record Health(String status, String database, String ai, String storage, String alerts,
+                         String email, Instant time) {}
 
     public record Meta(boolean aiEnabled, String aiModel, boolean s3Storage,
                        boolean snsAlerts, int reportTtlHours) {}

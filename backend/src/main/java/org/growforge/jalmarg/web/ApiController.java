@@ -2,6 +2,7 @@ package org.growforge.jalmarg.web;
 
 import org.growforge.jalmarg.dto.Dtos.*;
 import org.growforge.jalmarg.service.*;
+import org.growforge.jalmarg.security.AuthUser;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
@@ -24,13 +25,14 @@ public class ApiController {
     private final AiDepthService ai;
     private final ReportService reportService;
     private final SeedService seedService;
+    private final MailService mailService;
     private final String runKey;
     private final String aiModel;
 
     public ApiController(RouteService routeService, AlertService alertService, HotspotService hotspotService,
                          DashboardService dashboardService, PdfReportService pdfReportService,
                          StorageService storage, WeatherService weather, AiDepthService ai,
-                         ReportService reportService, SeedService seedService,
+                         ReportService reportService, SeedService seedService, MailService mailService,
                          @Value("${jalmarg.alerts.run-key}") String runKey,
                          @Value("${jalmarg.ai.model-id}") String aiModel) {
         this.routeService = routeService;
@@ -43,11 +45,33 @@ public class ApiController {
         this.ai = ai;
         this.reportService = reportService;
         this.seedService = seedService;
+        this.mailService = mailService;
         this.runKey = runKey;
         this.aiModel = aiModel;
     }
 
     // ------------------------------------------------------------- meta
+
+    /**
+     * Health check used by the app's "Test connection". Each part is reported separately so the
+     * app can tell "server down" from "database down" from "AI not configured".
+     */
+    @GetMapping("/health")
+    public ResponseEntity<Health> health() {
+        String db;
+        try {
+            reportService.countAll();
+            db = "UP";
+        } catch (Exception e) {
+            db = "DOWN";
+        }
+        Health h = new Health("UP".equals(db) ? "UP" : "DEGRADED", db,
+                ai.isEnabled() ? "ENABLED" : "OFF",
+                storage.usingS3() ? "S3" : "LOCAL",
+                alertService.snsEnabled() ? "SNS" : "LOG_ONLY",
+                mailService.mode(), java.time.Instant.now());
+        return ResponseEntity.status("UP".equals(db) ? 200 : 503).body(h);
+    }
 
     @GetMapping("/meta")
     public Meta meta() {
@@ -77,20 +101,23 @@ public class ApiController {
         return alertService.feed(lat, lng, Math.max(0.5, Math.min(25, radiusKm)), lang);
     }
 
+    /** Alerts always go to the signed-in account's own (verified) email. */
     @PostMapping("/alerts/subscriptions")
     @ResponseStatus(HttpStatus.CREATED)
     public SubscriptionView subscribe(@RequestBody SubscribeRequest req) {
-        return alertService.subscribe(req);
+        AuthUser u = AuthUser.current();
+        return alertService.subscribe(new SubscribeRequest(u.name(), u.email(), req.label(),
+                req.latitude(), req.longitude(), req.radiusKm(), req.lang()));
     }
 
     @GetMapping("/alerts/subscriptions")
-    public List<SubscriptionView> mySubscriptions(@RequestParam String email) {
-        return alertService.byEmail(email);
+    public List<SubscriptionView> mySubscriptions() {
+        return alertService.byEmail(AuthUser.current().email());
     }
 
     @DeleteMapping("/alerts/subscriptions/{id}")
-    public Map<String, Object> unsubscribe(@PathVariable long id, @RequestParam String email) {
-        alertService.unsubscribe(id, email);
+    public Map<String, Object> unsubscribe(@PathVariable long id) {
+        alertService.unsubscribe(id, AuthUser.current().email());
         return Map.of("ok", true);
     }
 
@@ -108,6 +135,12 @@ public class ApiController {
     @GetMapping("/hotspots")
     public List<HotspotView> hotspots() {
         return hotspotService.all();
+    }
+
+    /** AUTHORITY / ADMIN: mark a report resolved (CLEARED) or active again, with a note. */
+    @PatchMapping("/authority/reports/{id}")
+    public ReportView updateStatus(@PathVariable long id, @RequestBody StatusUpdate body) {
+        return ReportView.of(reportService.authorityUpdate(id, body.status(), body.note()));
     }
 
     @GetMapping("/authority/summary")

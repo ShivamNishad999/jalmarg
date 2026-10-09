@@ -68,6 +68,14 @@ public class Report {
     private Instant lastConfirmedAt;
     private Instant clearedAt;
 
+    /** Account that filed the report (null for demo data). Never shown publicly. */
+    private Long reporterId;
+
+    /** Note from the authority when they change the status (e.g. "Pump deployed"). */
+    @Column(length = 500)
+    private String authorityNote;
+    private Instant statusUpdatedAt;
+
     public Report() {}
 
     public Long getId() { return id; }
@@ -113,4 +121,10 @@ public class Report {
     public void setLastConfirmedAt(Instant lastConfirmedAt) { this.lastConfirmedAt = lastConfirmedAt; }
     public Instant getClearedAt() { return clearedAt; }
     public void setClearedAt(Instant clearedAt) { this.clearedAt = clearedAt; }
+    public Long getReporterId() { return reporterId; }
+    public void setReporterId(Long reporterId) { this.reporterId = reporterId; }
+    public String getAuthorityNote() { return authorityNote; }
+    public void setAuthorityNote(String authorityNote) { this.authorityNote = authorityNote; }
+    public Instant getStatusUpdatedAt() { return statusUpdatedAt; }
+    public void setStatusUpdatedAt(Instant statusUpdatedAt) { this.statusUpdatedAt = statusUpdatedAt; }
 }

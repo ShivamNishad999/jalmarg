@@ -22,4 +22,9 @@ public final class Enums {
     public enum DepthSource { AI, CITIZEN, AI_AND_CITIZEN, DEMO }
 
     public enum ReportStatus { ACTIVE, CLEARED, EXPIRED }
+
+    /** CITIZEN by sign-up; AUTHORITY and ADMIN only through an admin. */
+    public enum Role { CITIZEN, AUTHORITY, ADMIN }
+
+    public enum OtpPurpose { VERIFY_EMAIL, RESET_PASSWORD }
 }
