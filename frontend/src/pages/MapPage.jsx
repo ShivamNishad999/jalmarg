@@ -134,8 +134,8 @@ export default function MapPage() {
             <option value={3}>{t('last3h')}</option>
           </select>
         </div>
-        {layer === 'forecast' && forecast !== null && (
-          <div className="banner">{forecastErr ? t('forecastUnavailable') : forecast.length ? t('predictiveDisclaimer') : t('noForecast')}</div>
+        {layer === 'forecast' && forecast !== null && (forecastErr || forecast.length === 0) && (
+          <div className="banner">{forecastErr ? t('forecastUnavailable') : t('noForecast')}</div>
         )}
         {error && (
           <Link to="/settings#server" className="banner err">

@@ -429,3 +429,6 @@ td:nth-child(2) { white-space: normal; min-width: 200px; }
 .forecast-row:last-child { border-bottom: 0; }
 .hazard-forecast { color: var(--muted); font-style: italic; }
 .depth-num.small-num { font-size: 1rem; font-weight: 700; color: var(--muted); }
+/* map credits: keep them visible but out from under the bottom sheet */
+.map-page .leaflet-bottom.leaflet-right { top: 64px; bottom: auto; }
+.map-page .leaflet-control-attribution { font-size: 9px; max-width: 60vw; border-radius: 6px 0 0 6px; }

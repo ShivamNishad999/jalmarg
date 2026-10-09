@@ -266,6 +266,10 @@ class GeospatialDataFoundationTest {
     // 1. Copernicus DEM Real Extraction & Unmounted Raster Fallback
     @Test
     void copernicusDemExtractsRealRasterElevationAtMintoBridge() {
+        // Needs the 41 MB tile in backend/data/dem/ (not in git); skipped when absent, e.g. in CI.
+        org.junit.jupiter.api.Assumptions.assumeTrue(
+                new java.io.File("data/dem/Copernicus_DSM_COG_10_N28_00_E077_00_DEM.tif").isFile(),
+                "Copernicus DEM tile not present; skipping real-raster check");
         CopernicusDemService.TerrainRiskProfile profile =
                 copernicusDemService.getElevationProfile(28.6347, 77.2263);
 
