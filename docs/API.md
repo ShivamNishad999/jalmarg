@@ -1,6 +1,6 @@
 # JalMarg API
 
-Base URL: `http://localhost:8080` locally, App Runner / EC2 URL in production. All JSON. Errors: `{"error": "message"}`.
+Base URL: `http://localhost:8091` locally, App Runner / EC2 URL in production. All JSON. Errors: `{"error": "message"}`.
 
 ## Reports
 
