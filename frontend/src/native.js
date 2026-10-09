@@ -53,3 +53,34 @@ export async function nativePosition() {
   const p = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 15000 })
   return { lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy }
 }
+
+/**
+ * Native photo: source 'camera' opens the live camera, 'photos' opens the gallery picker.
+ * Returns a Blob (JPEG), or null if the person cancelled. Throws Error('camera-denied') when
+ * the camera permission is refused.
+ */
+export async function nativePhoto(source) {
+  const { Camera, CameraSource, CameraResultType } = await import('@capacitor/camera')
+  if (source === 'camera') {
+    let perm = await Camera.checkPermissions()
+    if (perm.camera !== 'granted') perm = await Camera.requestPermissions({ permissions: ['camera'] })
+    if (perm.camera !== 'granted') throw new Error('camera-denied')
+  }
+  try {
+    const photo = await Camera.getPhoto({
+      source: source === 'camera' ? CameraSource.Camera : CameraSource.Photos,
+      resultType: CameraResultType.Uri,
+      quality: 82,
+      width: 1600,
+      correctOrientation: true,
+      saveToGallery: false
+    })
+    const res = await fetch(photo.webPath)
+    return await res.blob()
+  } catch (e) {
+    const msg = String((e && e.message) || e).toLowerCase()
+    if (msg.includes('cancel')) return null // person backed out
+    if (msg.includes('permission') || msg.includes('denied')) throw new Error('camera-denied')
+    throw e
+  }
+}

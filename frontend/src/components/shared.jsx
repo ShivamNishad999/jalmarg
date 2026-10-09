@@ -1,7 +1,10 @@
 import L from 'leaflet'
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { Bike, Car, CheckCircle2, Droplets, Footprints, Landmark, Users } from 'lucide-react'
 import { api, photoUrl } from '../api'
-import { useLang } from '../i18n'
+import { useAuth } from '../auth'
+import { useLang, errorText } from '../i18n'
 
 export const SEV_COLOR = {
   LOW: 'var(--sev-low)',
@@ -10,11 +13,11 @@ export const SEV_COLOR = {
   SEVERE: 'var(--sev-severe)'
 }
 
-// Raw hex for Leaflet (CSS vars don't work inside SVG path options everywhere)
-export const SEV_HEX = { LOW: '#3c9d6b', MODERATE: '#d99a1e', HIGH: '#e0612b', SEVERE: '#c2273a' }
+// Raw hex for Leaflet (CSS vars do not reach Leaflet's SVG options)
+export const SEV_HEX = { LOW: '#0891B2', MODERATE: '#F59E0B', HIGH: '#EA580C', SEVERE: '#DC2626' }
 
 const iconCache = {}
-/** Round pulsing marker coloured by severity. */
+/** Round marker coloured by severity; severe ones pulse. */
 export function severityIcon(sev, pulse = false) {
   const key = sev + pulse
   if (!iconCache[key]) {
@@ -49,57 +52,56 @@ export function timeAgo(iso, lang) {
 
 export function SeverityPill({ sev }) {
   const { t } = useLang()
-  return (
-    <span className="pill" style={{ background: SEV_COLOR[sev] }}>
-      {t('sev_' + sev)}
-    </span>
-  )
+  return <span className={`pill sev-${(sev || 'low').toLowerCase()}`}>{t('sev_' + sev)}</span>
 }
 
 export function SafetyChips({ r }) {
   const { t } = useLang()
-  const chip = (label, ok, icon) => (
+  const chip = (label, ok, Icon) => (
     <span className={'chip ' + (ok ? 'ok' : 'bad')}>
-      <span aria-hidden>{icon}</span> {label} · {ok ? t('safe') : t('unsafe')}
+      <Icon size={14} aria-hidden /> {label} · {ok ? t('safe') : t('unsafe')}
     </span>
   )
   return (
     <div className="chips">
-      {chip(t('walk'), r.walkSafe, '🚶')}
-      {chip(t('bike'), r.bikeSafe, '🛵')}
-      {chip(t('car'), r.carSafe, '🚗')}
+      {chip(t('walk'), r.walkSafe, Footprints)}
+      {chip(t('bike'), r.bikeSafe, Bike)}
+      {chip(t('car'), r.carSafe, Car)}
     </div>
   )
 }
 
-/** Water-depth gauge: a little ruler next to a bike wheel for scale. */
+/** Water-depth gauge with bike / car / walking reference lines. */
 export function DepthGauge({ ft }) {
   const max = 3
   const pct = Math.min(100, (ft / max) * 100)
+  const mark = (v) => ({ bottom: (v / max) * 100 + '%' })
   return (
-    <div className="gauge" title={`${ft} ft`}>
+    <div className="gauge" title={`${ft} ft`} aria-hidden>
       <div className="gauge-water" style={{ height: pct + '%' }} />
-      <div className="gauge-mark" style={{ bottom: (0.5 / max) * 100 + '%' }}><span>🛵</span></div>
-      <div className="gauge-mark" style={{ bottom: (0.8 / max) * 100 + '%' }}><span>🚗</span></div>
-      <div className="gauge-mark" style={{ bottom: (1.5 / max) * 100 + '%' }}><span>🚶</span></div>
+      <div className="gauge-mark" style={mark(0.5)} />
+      <div className="gauge-mark" style={mark(0.8)} />
+      <div className="gauge-mark" style={mark(1.5)} />
     </div>
   )
 }
 
-/** Full report card used in map popups, lists and the report result screen. */
+/** Full report card used in map popups, lists and the result screen. */
 export function ReportCard({ r, onChange, compact = false }) {
   const { t, lang } = useLang()
+  const { user } = useAuth()
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
 
   const act = async (fn) => {
     setBusy(true)
+    setMsg('')
     try {
       const updated = await fn(r.id)
       setMsg(t('thanks'))
       onChange && onChange(updated)
     } catch (e) {
-      setMsg(e.message)
+      setMsg(errorText(e, t))
     } finally {
       setBusy(false)
     }
@@ -116,7 +118,6 @@ export function ReportCard({ r, onChange, compact = false }) {
           <div className="report-place">{r.locationName}</div>
           <div className="muted small">
             {r.area ? r.area + ' · ' : ''}{t('reported')} {timeAgo(r.createdAt, lang)} {t('ago')}
-            {r.confirmations > 0 && <> · {t('confirmedBy')} {r.confirmations} {t('people')}</>}
             {r.demo && <span className="tag">{t('demoTag')}</span>}
           </div>
         </div>
@@ -126,19 +127,24 @@ export function ReportCard({ r, onChange, compact = false }) {
         <DepthGauge ft={r.depthFt} />
         <div>
           <div className="depth-num">≈{r.depthFt.toFixed(1)} <small>{t('ft')}</small></div>
-          <div className="muted small">{t('estDepth')}</div>
-          {src && <div className="muted small">{src}{r.aiConfidence != null && ` · ${Math.round(r.aiConfidence * 100)}%`}</div>}
-          {summary && <p className="ai-summary">“{summary}”</p>}
+          <div className="muted small">{t('estDepth')}{src ? ` · ${src}` : ''}{r.aiConfidence != null && ` · ${Math.round(r.aiConfidence * 100)}%`}</div>
+          {r.confirmations > 0 && <div className="muted small"><Users size={12} aria-hidden /> {t('confirmedBy')} {r.confirmations} {t('people')}</div>}
         </div>
       </div>
+      {summary && <p className="ai-summary">“{summary}”</p>}
       <SafetyChips r={r} />
-      <p className="small muted disclaimer">{t('estimateNote')}</p>
+      <p className="disclaimer">{t('estimateNote')}</p>
       {r.note && !r.demo && <p className="small">{r.note}</p>}
+      {r.authorityNote && <p className="small authority-note"><Landmark size={14} aria-hidden /> {r.authorityNote}</p>}
       {onChange && r.status === 'ACTIVE' && (
-        <div className="row gap">
-          <button className="btn small" disabled={busy} onClick={() => act(api.confirm)}>💧 {t('stillFlooded')}</button>
-          <button className="btn small ghost" disabled={busy} onClick={() => act(api.clear)}>✅ {t('cleared')}</button>
-        </div>
+        user ? (
+          <div className="row gap">
+            <button className="btn small secondary" disabled={busy} onClick={() => act(api.confirm)}><Droplets size={14} aria-hidden /> {t('stillFlooded')}</button>
+            <button className="btn small ghost" disabled={busy} onClick={() => act(api.clear)}><CheckCircle2 size={14} aria-hidden /> {t('cleared')}</button>
+          </div>
+        ) : (
+          <Link to="/login" className="small">{t('signIn')} → {t('stillFlooded')} / {t('cleared')}</Link>
+        )
       )}
       {msg && <div className="small muted">{msg}</div>}
     </div>

@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { MapContainer, TileLayer, CircleMarker, Tooltip } from 'react-leaflet'
-import { api, NCR_CENTER, TILE_URL, TILE_ATTRIBUTION } from '../api'
-import { useLang } from '../i18n'
-import { SEV_HEX } from '../components/shared'
+import { CheckCircle2, FileDown, Landmark, RotateCcw } from 'lucide-react'
+import { api, NCR_CENTER, TILE_URL, TILE_ATTRIBUTION, isNativeApp } from '../api'
+import { useLang, errorText } from '../i18n'
+import { SEV_HEX, SeverityPill, timeAgo } from '../components/shared'
+import { Button, Notice, PageHead, Skeleton } from '../components/ui'
 
 const AREAS = ['', 'Delhi', 'Noida', 'Greater Noida', 'Ghaziabad', 'Gurugram']
 
@@ -23,12 +25,39 @@ export default function AuthorityPage() {
   const { t, lang } = useLang()
   const [area, setArea] = useState('')
   const [s, setS] = useState(null)
-  const [error, setError] = useState('')
+  const [error, setError] = useState(null)
+  const [pdfBusy, setPdfBusy] = useState(null)
+  const [recent, setRecent] = useState(null)
 
   useEffect(() => {
     setS(null)
-    api.summary(area, 30).then(setS).catch((e) => setError(e.message))
+    setError(null)
+    api.summary(area, 30).then(setS).catch(setError)
   }, [area])
+
+  const loadRecent = () => api.recentReports(3).then((r) => setRecent(Array.isArray(r) ? r : [])).catch((e) => { setError(e); setRecent([]) })
+  useEffect(() => { loadRecent() }, [])
+
+  /** PDF needs the sign-in token, so fetch it as a blob instead of a plain link. */
+  const downloadPdf = async (opts, key) => {
+    setPdfBusy(key)
+    setError(null)
+    try {
+      const blob = await api.pdf(opts)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `jalmarg-${opts.hotspotId ? 'hotspot-' + opts.hotspotId : (opts.area || 'ncr').toLowerCase().replace(/\s+/g, '-')}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      setTimeout(() => URL.revokeObjectURL(url), 30_000)
+    } catch (e) {
+      setError(e)
+    } finally {
+      setPdfBusy(null)
+    }
+  }
 
   const fmt = (iso) => (iso ? new Date(iso).toLocaleDateString(lang === 'hi' ? 'hi-IN' : 'en-IN', { day: 'numeric', month: 'short' }) : '-')
   const sevTotal = s ? Object.values(s.bySeverity).reduce((a, b) => a + b, 0) || 1 : 1
@@ -36,20 +65,18 @@ export default function AuthorityPage() {
   return (
     <div className="page wide">
       <div className="row between wrap">
-        <div>
-          <h1>{t('authTitle')}</h1>
-          <p className="muted">{t('authSub')}</p>
-        </div>
+        <PageHead icon={Landmark} title={t('authTitle')} sub={t('authSub')} />
         <div className="row gap wrap">
           <select className="input" value={area} onChange={(e) => setArea(e.target.value)}>
             {AREAS.map((a) => <option key={a} value={a}>{a || t('allAreas')}</option>)}
           </select>
-          <a className="btn primary" href={api.pdfUrl({ area })} target="_blank" rel="noreferrer">📄 {t('downloadPdf')}</a>
+          <Button loading={pdfBusy === 'area'} onClick={() => downloadPdf({ area }, 'area')}><FileDown size={18} aria-hidden /> {t('downloadPdf')}</Button>
         </div>
       </div>
 
-      {error && <div className="banner err">{error}</div>}
-      {!s && !error && <p className="muted">{t('loading')}</p>}
+      {isNativeApp && <Notice kind="info">{t('pdfWebHint')}</Notice>}
+      {error && <Notice kind="error">{errorText(error, t)}</Notice>}
+      {!s && !error && <div className="kpis">{[0, 1, 2, 3].map((i) => <Skeleton key={i} h={72} />)}</div>}
 
       {s && (
         <>
@@ -112,7 +139,7 @@ export default function AuthorityPage() {
                       <td>{h.reportsLast30Days}</td>
                       <td>{h.maxDepthFt.toFixed(1)} ft</td>
                       <td>{fmt(h.lastSeen)}</td>
-                      <td><a href={api.pdfUrl({ hotspotId: h.id })} target="_blank" rel="noreferrer">{t('pdf')}</a></td>
+                      <td><button className="link-btn" disabled={pdfBusy === h.id} onClick={() => downloadPdf({ hotspotId: h.id }, h.id)}>{t('pdf')}</button></td>
                     </tr>
                   ))}
                 </tbody>
@@ -121,6 +148,55 @@ export default function AuthorityPage() {
           </section>
         </>
       )}
+
+      <section className="card stack">
+        <h3 className="card-title">{t('reportsToReview')}</h3>
+        {recent === null && <><Skeleton h={56} /><Skeleton h={56} /></>}
+        {recent && recent.length === 0 && <p className="muted small">{t('noAlerts')}</p>}
+        {recent && recent.slice(0, 30).map((r) => (
+          <ReviewRow key={r.id} r={r} lang={lang} t={t} onSaved={(u) => setRecent((rs) => rs.map((x) => (x.id === u.id ? u : x)))} />
+        ))}
+      </section>
+    </div>
+  )
+}
+
+function ReviewRow({ r, lang, t, onSaved }) {
+  const [note, setNote] = useState(r.authorityNote || '')
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState(null)
+  const save = async (status) => {
+    setBusy(true)
+    setMsg(null)
+    try {
+      const u = await api.updateStatus(r.id, status, note.trim().slice(0, 500))
+      onSaved(u)
+      setMsg({ kind: 'success', text: t('statusUpdated') })
+    } catch (e) {
+      setMsg({ kind: 'error', text: errorText(e, t) })
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <div className="review-row">
+      <div className="row between gap">
+        <div>
+          <b>{r.locationName}</b>
+          <div className="small muted">#{r.id} · {r.area || '-'} · ≈{r.depthFt.toFixed(1)} {t('ft')} · {timeAgo(r.createdAt, lang)} {t('ago')}{r.demo ? ` · ${t('demoTag')}` : ''}</div>
+        </div>
+        <div className="row gap">
+          <SeverityPill sev={r.severity} />
+          <span className={'pill ' + (r.status === 'ACTIVE' ? 'sev-severe' : 'neutral')}>{r.status}</span>
+        </div>
+      </div>
+      <div className="row gap wrap">
+        <input className="input grow" value={note} maxLength={500} onChange={(e) => setNote(e.target.value)} placeholder={t('notePh')} />
+        {r.status === 'ACTIVE'
+          ? <Button className="small" loading={busy} onClick={() => save('CLEARED')}><CheckCircle2 size={16} aria-hidden /> {t('markResolved')}</Button>
+          : <Button className="small" variant="secondary" loading={busy} onClick={() => save('ACTIVE')}><RotateCcw size={16} aria-hidden /> {t('reopen')}</Button>}
+      </div>
+      {msg && <Notice kind={msg.kind}>{msg.text}</Notice>}
     </div>
   )
 }

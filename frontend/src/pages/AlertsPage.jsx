@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { MapContainer, TileLayer, Marker, Circle, useMapEvents, useMap } from 'react-leaflet'
-import { useEffect } from 'react'
+import { Bell, Crosshair, Trash2 } from 'lucide-react'
 import { api, getPosition, NCR_CENTER, TILE_URL, TILE_ATTRIBUTION } from '../api'
-import { useLang } from '../i18n'
+import { useAuth } from '../auth'
+import { useLang, errorText } from '../i18n'
 import { youIcon } from '../components/shared'
+import { Button, Notice, PageHead, Skeleton } from '../components/ui'
 
 function Picker({ onPick }) {
   useMapEvents({ click: (e) => onPick({ lat: e.latlng.lat, lng: e.latlng.lng }) })
@@ -17,63 +19,55 @@ function Follow({ pos }) {
 
 export default function AlertsPage() {
   const { t, lang } = useLang()
-  const [form, setForm] = useState({ name: '', email: '', label: 'Home', radiusKm: 3, lang })
+  const { user } = useAuth()
+  const [form, setForm] = useState({ label: 'Home', radiusKm: 3, lang })
   const [pos, setPos] = useState(null)
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
-  const [done, setDone] = useState(null)
-  const [lookupEmail, setLookupEmail] = useState('')
+  const [error, setError] = useState(null)
+  const [saved, setSaved] = useState(null)
   const [mine, setMine] = useState(null)
 
-  const set = (k) => (e) => setForm({ ...form, [k]: e.target.value })
+  const loadMine = () => api.mySubscriptions().then(setMine).catch((e) => { setError(e); setMine([]) })
+  useEffect(() => { loadMine() }, [])
 
   const submit = async (e) => {
     e.preventDefault()
-    setError('')
-    if (!pos) return setError(t('needLocation'))
+    setError(null)
+    setSaved(null)
+    if (!pos) return setError({ message: t('needLocation') })
     setBusy(true)
     try {
       const s = await api.subscribe({ ...form, radiusKm: +form.radiusKm, latitude: pos.lat, longitude: pos.lng })
-      setDone(s)
-      setLookupEmail(s.email)
-      setMine(await api.mySubscriptions(s.email))
+      setSaved(s)
+      loadMine()
     } catch (err) {
-      setError(err.message)
+      setError(err)
     } finally {
       setBusy(false)
     }
   }
 
-  const lookup = async () => {
-    try { setMine(await api.mySubscriptions(lookupEmail)) } catch (e) { setError(e.message) }
-  }
   const remove = async (id) => {
-    await api.unsubscribe(id, lookupEmail)
-    setMine(mine.filter((m) => m.id !== id))
+    try {
+      await api.unsubscribe(id)
+      setMine((m) => m.filter((x) => x.id !== id))
+    } catch (e) {
+      setError(e)
+    }
   }
 
   return (
     <div className="page narrow">
-      <h1>{t('alertsTitle')}</h1>
-      <p className="muted">{t('alertsSub')}</p>
+      <PageHead icon={Bell} title={t('alertsTitle')} sub={t('alertsSub')} />
 
-      {done && (
-        <div className="banner ok">
-          ✓ {t('subscribed')} {done.emailAlertsActive && <><br /><span className="small">{t('confirmEmail')}</span></>}
-        </div>
+      {saved && (
+        <Notice kind="success">
+          {t('prefSaved')} {saved.emailAlertsActive ? t('confirmEmail') : t('emailNotActive')}
+        </Notice>
       )}
 
       <form className="card stack" onSubmit={submit}>
-        <div className="grid2">
-          <div>
-            <label className="label">{t('yourName')}</label>
-            <input className="input" value={form.name} onChange={set('name')} />
-          </div>
-          <div>
-            <label className="label">{t('email')} *</label>
-            <input className="input" type="email" required value={form.email} onChange={set('email')} />
-          </div>
-        </div>
+        <div className="diag-row"><span>{t('email')}</span><b>{user?.email}</b></div>
 
         <label className="label">{t('label')}</label>
         <div className="seg">
@@ -82,10 +76,10 @@ export default function AlertsPage() {
           ))}
         </div>
 
-        <div className="row gap">
-          <button type="button" className="btn small ghost" onClick={() => getPosition().then(setPos).catch(() => setError(t('needLocation')))}>
-            📍 {t('setFromGps')}
-          </button>
+        <div className="row gap wrap">
+          <Button type="button" variant="secondary" className="small" onClick={() => getPosition().then(setPos).catch(() => setError({ message: t('locationFallback') }))}>
+            <Crosshair size={16} aria-hidden /> {t('setFromGps')}
+          </Button>
           <span className="small muted">{t('tapMapToSet')}</span>
         </div>
         <div className="mini-map">
@@ -95,7 +89,7 @@ export default function AlertsPage() {
             <Follow pos={pos} />
             {pos && <>
               <Marker position={[pos.lat, pos.lng]} icon={youIcon} />
-              <Circle center={[pos.lat, pos.lng]} radius={form.radiusKm * 1000} pathOptions={{ color: '#1769aa', weight: 1, fillOpacity: 0.08 }} />
+              <Circle center={[pos.lat, pos.lng]} radius={form.radiusKm * 1000} pathOptions={{ color: '#0EA5E9', weight: 1, fillOpacity: 0.08 }} />
             </>}
           </MapContainer>
         </div>
@@ -103,7 +97,7 @@ export default function AlertsPage() {
         <div className="grid2">
           <div>
             <label className="label">{t('radius')}: {form.radiusKm} km</label>
-            <input type="range" min="1" max="10" step="1" value={form.radiusKm} onChange={set('radiusKm')} />
+            <input type="range" min="1" max="10" step="1" value={form.radiusKm} onChange={(e) => setForm({ ...form, radiusKm: e.target.value })} />
           </div>
           <div>
             <label className="label">{t('language')}</label>
@@ -114,21 +108,18 @@ export default function AlertsPage() {
           </div>
         </div>
 
-        {error && <div className="banner err">{error}</div>}
-        <button className="btn primary block" disabled={busy}>{busy ? <span className="spinner" /> : '🔔'} {t('subscribe')}</button>
+        {error && <Notice kind="error">{errorText(error, t)}</Notice>}
+        <Button block loading={busy} type="submit"><Bell size={18} aria-hidden /> {t('subscribe')}</Button>
       </form>
 
       <section className="card stack">
-        <h3>{t('mySubs')}</h3>
-        <div className="row gap">
-          <input className="input" type="email" placeholder={t('email')} value={lookupEmail} onChange={(e) => setLookupEmail(e.target.value)} />
-          <button className="btn small" onClick={lookup}>{t('lookup')}</button>
-        </div>
-        {mine && mine.length === 0 && <p className="muted small">—</p>}
+        <h3 className="card-title">{t('mySubs')}</h3>
+        {mine === null && <><Skeleton h={18} /><Skeleton h={18} w="70%" /></>}
+        {mine && mine.length === 0 && <p className="muted small">{t('noSubs')}</p>}
         {mine && mine.map((m) => (
           <div key={m.id} className="row between sub-row">
-            <span>🔔 <b>{m.label}</b> · {m.radiusKm} km · {m.lang.toUpperCase()}</span>
-            <button className="btn small ghost" onClick={() => remove(m.id)}>{t('remove')}</button>
+            <span><b>{m.label}</b> · {m.radiusKm} km · {m.lang.toUpperCase()} · <span className="muted small">{m.emailAlertsActive ? t('emailPending') : t('savedOnly')}</span></span>
+            <Button variant="ghost" className="small" onClick={() => remove(m.id)} aria-label={t('remove')}><Trash2 size={16} aria-hidden /></Button>
           </div>
         ))}
       </section>

@@ -19,6 +19,19 @@ Create bucket `jalmarg-photos-<yourname>` (Block all public access **ON** — ph
 ## 3. Amazon SNS — email alerts
 Create a **Standard** topic `jalmarg-alerts`. Copy its ARN. (No manual subscriptions: the app subscribes each user's email with a filter policy; users click the AWS confirmation email once.)
 
+## 3b. Amazon SES — sign-up / reset codes (email OTP)
+1. SES console (ap-south-1) → **Identities → Create identity** → verify your sender email (or domain).
+2. New SES accounts are in the *sandbox*: you can only send to verified addresses. For the demo, verify each
+   teammate's / judge's email too, or request production access.
+3. **SMTP settings → Create SMTP credentials** → this creates an IAM user and shows a username + password once.
+4. On the server set:
+   `MAIL_HOST=email-smtp.ap-south-1.amazonaws.com MAIL_PORT=587 MAIL_USERNAME=<smtp user> MAIL_PASSWORD=<smtp password> MAIL_FROM="JalMarg <you@verified-address>"`
+5. Check `GET /api/health` → `"email": "smtp"`.
+Quick alternative for testing: a Gmail **App Password** (`MAIL_HOST=smtp.gmail.com`, port 587, your Gmail + 16-char app password).
+Never set `JALMARG_DEV_OTP=true` on a public server — it prints codes to the log.
+To make someone an authority officer: set `ADMIN_EMAIL`/`ADMIN_PASSWORD` once, sign in as admin, then
+`POST /api/admin/users/role {"email":"officer@...","role":"AUTHORITY"}`.
+
 ## 4. Amazon RDS — MySQL (optional)
 *Easy create* → MySQL → **Free tier** → `db.t4g.micro`, DB name `jalmarg`. Put it in the same VPC as the EC2 instance and allow port 3306 from the EC2 security group.
 `DB_URL=jdbc:mysql://<endpoint>:3306/jalmarg?createDatabaseIfNotExist=true`

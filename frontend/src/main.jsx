@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css'
 import './styles.css'
 import App from './App'
 import { LangProvider } from './i18n'
+import { AuthProvider } from './auth'
 import ErrorBoundary from './components/ErrorBoundary'
 
 const inApp = !!window.Capacitor?.isNativePlatform?.()
@@ -22,9 +23,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ErrorBoundary>
       <LangProvider>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
+        <AuthProvider>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </AuthProvider>
       </LangProvider>
     </ErrorBoundary>
   </React.StrictMode>

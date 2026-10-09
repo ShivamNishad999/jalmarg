@@ -53,17 +53,39 @@ The frontend gets route geometry from OSRM, sends it here, and re-ranks for the 
 
 ## Alerts
 - `GET /api/alerts/feed?lat=&lng=&radiusKm=3&lang=en|hi` → `{ rainNext6hMm, maxHourlyMm, rainLevel, alerts: [{level,title,message,reportId,latitude,longitude}] }`
-- `POST /api/alerts/subscriptions` `{name,email,label,latitude,longitude,radiusKm,lang}` → Subscription (`emailAlertsActive` = SNS subscription created)
-- `GET /api/alerts/subscriptions?email=` · `DELETE /api/alerts/subscriptions/{id}?email=`
+- `POST /api/alerts/subscriptions` 🔒 `{label,latitude,longitude,radiusKm,lang}` → Subscription for the signed-in account's email (`emailAlertsActive` = SNS subscription created)
+- `GET /api/alerts/subscriptions` 🔒 (mine) · `DELETE /api/alerts/subscriptions/{id}` 🔒
 - `POST /api/alerts/run` header `X-Jalmarg-Key` → `{sent: n}` (EventBridge Scheduler)
 - `GET /api/weather?lat=&lng=` → `{next6hMm, maxHourlyMm, level}`
 
 ## Authority
 - `GET /api/hotspots` → Hotspot[] `{id,name,area,latitude,longitude,totalReports,reportsLast30Days,maxDepthFt,activeNow,firstSeen,lastSeen}`
-- `GET /api/authority/summary?area=&days=30` → KPIs, per-day counts, severity split, top 10 hotspots
-- `GET /api/authority/report.pdf?area=Noida` or `?hotspotId=3` → complaint PDF
+- `GET /api/authority/summary?area=&days=30` 🏛 → KPIs, per-day counts, severity split, top 10 hotspots
+- `GET /api/authority/report.pdf?area=Noida` or `?hotspotId=3` 🏛 → complaint PDF
+- `PATCH /api/authority/reports/{id}` 🏛 `{status: ACTIVE|CLEARED, note}` → Report (adds `authorityNote`, `statusUpdatedAt`)
+
+## Accounts
+Legend: 🔒 = needs `Authorization: Bearer <token>` · 🏛 = role AUTHORITY or ADMIN.
+Errors are `{ "error": "...", "code": "..." }`.
+
+| Call | Body | Result |
+|---|---|---|
+| `POST /api/auth/register` | `{name,email,password}` (password ≥ 8 chars, letters + digits) | `202 {status:"CODE_SENT"}` — 6-digit code emailed. Same answer for an existing email (no account enumeration). |
+| `POST /api/auth/verify-email` | `{email,code}` | `{status:"VERIFIED"}` · `OTP_INVALID` / `OTP_EXPIRED` / `OTP_LOCKED` |
+| `POST /api/auth/resend-code` | `{email,purpose: VERIFY_EMAIL\|RESET_PASSWORD}` | `202` · `OTP_COOLDOWN` (60 s) / `OTP_LIMIT` (5 per hour) |
+| `POST /api/auth/login` | `{email,password}` | `{token,expiresAt,user:{id,name,email,role,emailVerified,createdAt}}` · `INVALID_CREDENTIALS` 401 / `EMAIL_NOT_VERIFIED` 403 / `ACCOUNT_LOCKED` 423 (5 failures → 15 min) / `RATE_LIMITED` 429 |
+| `GET /api/auth/me` 🔒 | – | user |
+| `POST /api/auth/logout` 🔒 | – | `204`, session revoked on the server |
+| `POST /api/auth/forgot-password` | `{email}` | `202` always |
+| `POST /api/auth/reset-password` | `{email,code,newPassword}` | `{status:"PASSWORD_RESET"}`; all sessions of that user are revoked |
+| `POST /api/admin/users/role` (ADMIN) | `{email, role: CITIZEN\|AUTHORITY\|ADMIN}` | user |
+
+Security: passwords BCrypt(11); OTPs 6 digits from SecureRandom, stored BCrypt-hashed, 5 min expiry, single use, 5 attempts.
+Session tokens are 256-bit random values; only their SHA-256 is stored. Writes (`POST /api/reports`, confirm/clear,
+subscriptions) need a verified account; reading the map, feed and routes is public.
 
 ## Misc
+- `GET /api/health` → `{status, database, ai, storage, alerts, email: smtp|dev-console|not-configured, time}` (used by the app's "Save & test")
 - `GET /api/meta` → `{aiEnabled, aiModel, s3Storage, snsAlerts, reportTtlHours}`
 - `POST /api/admin/demo-refresh` header `X-Jalmarg-Key` → re-creates the live demo reports
 - `GET /actuator/health`

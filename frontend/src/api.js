@@ -1,82 +1,166 @@
 // All calls to the JalMarg backend (Spring Boot) and to free map services.
 
-// Backend URL. Order: value saved in the app (About > Server) → build-time VITE_API_BASE → same origin.
-// The saved value lets one Android APK talk to a laptop on Wi-Fi or to the AWS deployment.
-const clean = (u) => {
-  let v = (u || '').trim().replace(/\/+$/, '')
-  // "192.168.1.5:8091" typed without a scheme → http://192.168.1.5:8091
-  if (v && !/^https?:\/\//i.test(v)) v = 'http://' + v
-  return v
+import { isNative, nativePosition } from './native'
+export { isNative as isNativeApp } from './native'
+
+// ---------------------------------------------------------------- backend address
+
+/**
+ * Validates and normalises a backend address typed by a person.
+ * - trims, drops trailing slashes and a trailing "/api"
+ * - no scheme: http:// for localhost / private LAN IPs (local testing), https:// otherwise
+ * Returns { ok: true, url } or { ok: false, error }.
+ */
+export function parseServerUrl(input) {
+  let v = (input || '').trim()
+  if (!v) return { ok: false, error: 'EMPTY' }
+  if (!/^[a-z]+:\/\//i.test(v)) {
+    const host = v.split(/[/:]/)[0]
+    const local = /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(host)
+    v = (local ? 'http://' : 'https://') + v
+  }
+  let u
+  try {
+    u = new URL(v)
+  } catch {
+    return { ok: false, error: 'MALFORMED' }
+  }
+  if (u.protocol !== 'http:' && u.protocol !== 'https:') return { ok: false, error: 'MALFORMED' }
+  if (!u.hostname || /\s/.test(u.hostname)) return { ok: false, error: 'MALFORMED' }
+  const path = u.pathname.replace(/\/+$/, '').replace(/\/api$/, '')
+  return { ok: true, url: `${u.protocol}//${u.host}${path}` }
 }
+
 function readSaved() {
   try { return localStorage.getItem('jalmarg-api') } catch { return null }
 }
-export let API_BASE = clean(readSaved() || import.meta.env.VITE_API_BASE)
+const initial = parseServerUrl(readSaved() || import.meta.env.VITE_API_BASE || '')
+/** Backend base URL ('' = same origin, used by the web app in development). */
+export let API_BASE = initial.ok ? initial.url : ''
 
 export function setApiBase(url) {
-  API_BASE = clean(url)
+  const p = parseServerUrl(url)
+  API_BASE = p.ok ? p.url : ''
   try {
     if (API_BASE) localStorage.setItem('jalmarg-api', API_BASE)
     else localStorage.removeItem('jalmarg-api')
   } catch { /* storage blocked */ }
 }
 
-/** True when running inside the installed Android app (Capacitor). */
-export { isNative as isNativeApp } from './native'
-import { isNative, nativePosition } from './native'
+/** True when the app knows where its backend is. */
+export const serverConfigured = () => !isNative || !!API_BASE
 
 // Map tiles: CARTO Voyager (OpenStreetMap data). Works inside the Android WebView, where
 // tile.openstreetmap.org may refuse requests without a website referrer.
 export const TILE_URL = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
 export const TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
 
-export class ServerNotSetError extends Error {
-  constructor() { super('Server address is not set (About → Server)') }
+// ---------------------------------------------------------------- errors
+
+/**
+ * Every failed call throws an ApiError with a `kind` the UI can act on:
+ * NOT_CONFIGURED | OFFLINE | UNREACHABLE | TIMEOUT | NOT_JALMARG | AUTH | FORBIDDEN | HTTP
+ * plus `status` and the backend's `code` (e.g. EMAIL_NOT_VERIFIED, OTP_INVALID).
+ */
+export class ApiError extends Error {
+  constructor(kind, message, { status = 0, code = '' } = {}) {
+    super(message)
+    this.kind = kind
+    this.status = status
+    this.code = code
+  }
 }
 
-async function request(path, options = {}) {
-  // Inside the Android app there is no backend on the same origin: a server address is required.
-  if (isNative && !API_BASE) throw new ServerNotSetError()
-  const res = await fetch(API_BASE + path, options)
+// ---------------------------------------------------------------- auth token
+
+let token = null
+let onUnauthorized = () => {}
+export const setAuthToken = (t) => { token = t || null }
+export const setUnauthorizedHandler = (fn) => { onUnauthorized = fn }
+
+async function request(path, { method = 'GET', body, json: jsonBody, timeout = 15000, auth = true } = {}) {
+  if (!serverConfigured()) throw new ApiError('NOT_CONFIGURED', 'The server address is not set.')
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    throw new ApiError('OFFLINE', 'No internet connection.')
+  }
+  const headers = {}
+  if (jsonBody !== undefined) headers['Content-Type'] = 'application/json'
+  if (auth && token) headers.Authorization = 'Bearer ' + token
+  const ctrl = new AbortController()
+  const timer = setTimeout(() => ctrl.abort(), timeout)
+  let res
+  try {
+    res = await fetch(API_BASE + path, {
+      method,
+      headers,
+      body: jsonBody !== undefined ? JSON.stringify(jsonBody) : body,
+      signal: ctrl.signal
+    })
+  } catch (e) {
+    if (e && e.name === 'AbortError') throw new ApiError('TIMEOUT', 'The server did not answer in time.')
+    throw new ApiError('UNREACHABLE', 'Could not reach the server.')
+  } finally {
+    clearTimeout(timer)
+  }
+  if (res.status === 204) return null
   const isJson = (res.headers.get('content-type') || '').includes('application/json')
-  const body = isJson ? await res.json() : null
-  if (!res.ok) throw new Error((body && body.error) || `Request failed (${res.status})`)
+  let data = null
+  if (isJson) {
+    try { data = await res.json() } catch { data = null }
+  }
+  if (!res.ok) {
+    const code = (data && data.code) || ''
+    const msg = (data && data.error) || `Request failed (${res.status})`
+    if (res.status === 401) {
+      if (token && auth) onUnauthorized()
+      throw new ApiError('AUTH', msg, { status: 401, code })
+    }
+    if (res.status === 403 && code !== 'EMAIL_NOT_VERIFIED') throw new ApiError('FORBIDDEN', msg, { status: 403, code })
+    throw new ApiError('HTTP', msg, { status: res.status, code })
+  }
   // A non-JSON answer means the address does not point at the JalMarg backend
-  if (!isJson) throw new Error('This address is not the JalMarg server. Check About → Server.')
-  return body
+  if (!isJson) throw new ApiError('NOT_JALMARG', 'This address is not a JalMarg server.')
+  return data
 }
-
-const json = (method, body) => ({
-  method,
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify(body)
-})
 
 export const photoUrl = (p) => (p ? (p.startsWith('http') ? p : API_BASE + p) : null)
 
 export const api = {
+  health: () => request('/api/health', { timeout: 8000, auth: false }),
   meta: () => request('/api/meta'),
   activeReports: () => request('/api/reports/active'),
   recentReports: (days = 7) => request(`/api/reports/recent?days=${days}`),
-  createReport: (formData) => request('/api/reports', { method: 'POST', body: formData }),
+  createReport: (formData) => request('/api/reports', { method: 'POST', body: formData, timeout: 60000 }),
   confirm: (id) => request(`/api/reports/${id}/confirm`, { method: 'POST' }),
   clear: (id) => request(`/api/reports/${id}/clear`, { method: 'POST' }),
   feed: (lat, lng, lang, radiusKm = 3) =>
     request(`/api/alerts/feed?lat=${lat}&lng=${lng}&lang=${lang}&radiusKm=${radiusKm}`),
-  subscribe: (body) => request('/api/alerts/subscriptions', json('POST', body)),
-  mySubscriptions: (email) => request(`/api/alerts/subscriptions?email=${encodeURIComponent(email)}`),
-  unsubscribe: (id, email) =>
-    request(`/api/alerts/subscriptions/${id}?email=${encodeURIComponent(email)}`, { method: 'DELETE' }),
-  evaluateRoutes: (routes) => request('/api/routes/evaluate', json('POST', { routes, bufferMeters: 60 })),
+  subscribe: (b) => request('/api/alerts/subscriptions', { method: 'POST', json: b }),
+  mySubscriptions: () => request('/api/alerts/subscriptions'),
+  unsubscribe: (id) => request(`/api/alerts/subscriptions/${id}`, { method: 'DELETE' }),
+  evaluateRoutes: (routes) => request('/api/routes/evaluate', { method: 'POST', json: { routes, bufferMeters: 60 } }),
   hotspots: () => request('/api/hotspots'),
   summary: (area, days = 30) =>
     request(`/api/authority/summary?days=${days}${area ? `&area=${encodeURIComponent(area)}` : ''}`),
-  pdfUrl: ({ area, hotspotId } = {}) => {
+  updateStatus: (id, status, note) => request(`/api/authority/reports/${id}`, { method: 'PATCH', json: { status, note } }),
+  /** PDF needs the auth header, so it is fetched as a blob and opened. */
+  pdf: async ({ area, hotspotId } = {}) => {
     const q = new URLSearchParams()
     if (area) q.set('area', area)
     if (hotspotId) q.set('hotspotId', hotspotId)
-    return `${API_BASE}/api/authority/report.pdf?${q}`
-  }
+    const res = await fetch(`${API_BASE}/api/authority/report.pdf?${q}`, { headers: token ? { Authorization: 'Bearer ' + token } : {} })
+    if (!res.ok) throw new ApiError('HTTP', `Could not create the PDF (${res.status})`, { status: res.status })
+    return res.blob()
+  },
+  // accounts
+  register: (b) => request('/api/auth/register', { method: 'POST', json: b, auth: false }),
+  verifyEmail: (email, code) => request('/api/auth/verify-email', { method: 'POST', json: { email, code }, auth: false }),
+  resendCode: (email, purpose = 'VERIFY_EMAIL') => request('/api/auth/resend-code', { method: 'POST', json: { email, purpose }, auth: false }),
+  login: (email, password) => request('/api/auth/login', { method: 'POST', json: { email, password }, auth: false }),
+  me: () => request('/api/auth/me'),
+  logout: () => request('/api/auth/logout', { method: 'POST', timeout: 8000 }),
+  forgot: (email) => request('/api/auth/forgot-password', { method: 'POST', json: { email }, auth: false }),
+  reset: (email, code, newPassword) => request('/api/auth/reset-password', { method: 'POST', json: { email, code, newPassword }, auth: false })
 }
 
 // ---------------------------------------------------------------- free map services

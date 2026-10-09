@@ -2,13 +2,15 @@ import { useEffect, useState } from 'react'
 import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { api, getPosition, getRoutes, NCR_CENTER, TILE_URL, TILE_ATTRIBUTION } from '../api'
-import { useLang } from '../i18n'
+import { AlertTriangle, Bike, Car, CheckCircle2, Footprints, Navigation } from 'lucide-react'
+import { useLang, errorText } from '../i18n'
+import { Button, Notice, PageHead } from '../components/ui'
 import PlaceSearch from '../components/PlaceSearch'
 import { severityIcon, youIcon, SEV_HEX } from '../components/shared'
 
 // Depth (ft) above which a flooded spot blocks this way of travelling
 const LIMIT = { bike: 0.5, car: 0.8, walk: 1.5 }
-const destIcon = L.divIcon({ className: 'jm-marker-wrap', html: '<span class="jm-dest">🏁</span>', iconSize: [26, 26], iconAnchor: [13, 24] })
+const destIcon = L.divIcon({ className: 'jm-marker-wrap', html: '<span class="jm-dest"></span>', iconSize: [26, 26], iconAnchor: [13, 24] })
 
 function FitBounds({ routes }) {
   const map = useMap()
@@ -43,14 +45,14 @@ export default function RoutePage() {
   const [to, setTo] = useState(null)
   const [mode, setMode] = useState('bike')
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError] = useState(null)
   const [options, setOptions] = useState([]) // [{coords, distanceKm, durationMin, via, hazards, blocking}]
   const [chosen, setChosen] = useState(0)
 
   const locateMe = () =>
     getPosition()
       .then((p) => setFrom({ lat: p.lat, lng: p.lng, name: t('myLocation') }))
-      .catch(() => setError(t('needLocation')))
+      .catch(() => setError({ message: t('needLocation') }))
 
   useEffect(() => { locateMe() }, []) // eslint-disable-line
 
@@ -63,7 +65,7 @@ export default function RoutePage() {
   }
 
   const find = async () => {
-    setError('')
+    setError(null)
     if (!from || !to) return
     setBusy(true)
     setOptions([])
@@ -91,7 +93,7 @@ export default function RoutePage() {
       setOptions(routes.slice(0, 4))
       setChosen(0)
     } catch (e) {
-      setError(e.message)
+      setError(e)
     } finally {
       setBusy(false)
     }
@@ -107,7 +109,7 @@ export default function RoutePage() {
   return (
     <div className="split">
       <aside className="panel">
-        <h1>{t('routeTitle')}</h1>
+        <PageHead icon={Navigation} title={t('routeTitle')} />
         <label className="label">{t('from')}</label>
         <PlaceSearch value={from} onSelect={setFrom} placeholder={t('searchPlace')}
           extraOption={{ label: t('myLocation'), onClick: locateMe }} />
@@ -116,17 +118,17 @@ export default function RoutePage() {
 
         <label className="label">{t('travelBy')}</label>
         <div className="seg">
-          {[['bike', '🛵'], ['car', '🚗'], ['walk', '🚶']].map(([m, i]) => (
-            <button key={m} className={mode === m ? 'on' : ''} onClick={() => setMode(m)}>{i} {t(m)}</button>
+          {[['bike', Bike], ['car', Car], ['walk', Footprints]].map(([m, Icon]) => (
+            <button key={m} className={mode === m ? 'on' : ''} onClick={() => setMode(m)}><Icon size={16} aria-hidden /> {t(m)}</button>
           ))}
         </div>
 
-        <button className="btn primary block" disabled={!from || !to || busy} onClick={find}>
-          {busy ? <><span className="spinner" /> {t('finding')}</> : t('findRoute')}
-        </button>
-        {error && <div className="banner err">{error}</div>}
+        <Button block disabled={!from || !to} loading={busy} onClick={find}>
+          <Navigation size={18} aria-hidden /> {busy ? t('finding') : t('findRoute')}
+        </Button>
+        {error && <Notice kind="error">{errorText(error, t)}</Notice>}
 
-        {options.length > 0 && options[0].blocking > 0 && <div className="banner warn">⚠️ {t('noSafe')}</div>}
+        {options.length > 0 && options[0].blocking > 0 && <Notice kind="warn"><AlertTriangle size={16} aria-hidden /> {t('noSafe')}</Notice>}
 
         <ul className="route-list">
           {options.map((r, i) => (
@@ -135,12 +137,12 @@ export default function RoutePage() {
                 <div className="row between">
                   <b>{Math.round(r.durationMin)} {t('min')} · {r.distanceKm.toFixed(1)} {t('km')}</b>
                   <span>
-                    {i === 0 && <span className="pill" style={{ background: 'var(--ok)' }}>{t('recommended')}</span>}
-                    {r.isFastest && <span className="pill ghost">{t('fastest')}</span>}
+                    {i === 0 && <span className="pill ok">{t('recommended')}</span>}
+                    {r.isFastest && <span className="pill neutral">{t('fastest')}</span>}
                   </span>
                 </div>
                 {r.hazards.length === 0
-                  ? <div className="small ok-text">✓ {t('avoids')}</div>
+                  ? <div className="small ok-text"><CheckCircle2 size={14} aria-hidden /> {t('avoids')}</div>
                   : (
                     <div className="small">
                       {t('passes')} {r.hazards.length} {t('floodedSpots')}:
@@ -153,7 +155,8 @@ export default function RoutePage() {
             </li>
           ))}
         </ul>
-        {mapsLink && <a className="btn block" href={mapsLink} target="_blank" rel="noreferrer">🧭 {t('openInMaps')}</a>}
+        {mapsLink && <a className="btn secondary block" href={mapsLink} target="_blank" rel="noreferrer"><Navigation size={18} aria-hidden /> {t('openInMaps')}</a>}
+        {options.length > 0 && <p className="disclaimer">{t('routeNote')}</p>}
       </aside>
 
       <div className="map-wrap">
@@ -163,10 +166,10 @@ export default function RoutePage() {
           {from && <Marker position={[from.lat, from.lng]} icon={youIcon} />}
           {to && <Marker position={[to.lat, to.lng]} icon={destIcon} />}
           {options.map((r, i) => i !== chosen && (
-            <Polyline key={i} positions={r.coords} pathOptions={{ color: '#7d8a96', weight: 5, opacity: 0.55, dashArray: '6 8' }}
+            <Polyline key={i} positions={r.coords} pathOptions={{ color: '#64748B', weight: 5, opacity: 0.55, dashArray: '6 8' }}
               eventHandlers={{ click: () => setChosen(i) }} />
           ))}
-          {best && <Polyline positions={best.coords} pathOptions={{ color: best.blocking ? '#e0612b' : '#1769aa', weight: 7, opacity: 0.9 }} />}
+          {best && <Polyline positions={best.coords} pathOptions={{ color: best.blocking ? '#EA580C' : '#0EA5E9', weight: 7, opacity: 0.9 }} />}
           {[...new Map(options.flatMap((r) => r.hazards).map((h) => [h.reportId, h])).values()].map((h) => (
             <Marker key={'h' + h.reportId} position={[h.latitude, h.longitude]} icon={severityIcon(h.severity, true)}>
               <Popup>{h.locationName}<br />{h.depthFt.toFixed(1)} ft</Popup>

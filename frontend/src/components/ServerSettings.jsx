@@ -1,45 +1,83 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { API_BASE, api, setApiBase } from '../api'
-import { useLang } from '../i18n'
+import { useEffect, useState } from 'react'
+import { CheckCircle2, CircleDashed, Server, XCircle } from 'lucide-react'
+import { API_BASE, api, parseServerUrl, setApiBase, isNativeApp } from '../api'
+import { useLang, errorText } from '../i18n'
+import { Button, Notice } from './ui'
 
-/** Lets the Android app (or a tester) point JalMarg at a backend: AWS URL or laptop IP on Wi-Fi. */
-export default function ServerSettings() {
-  const { lang } = useLang()
+/**
+ * Backend address + live diagnostics. "Save & test" validates the address, saves it, and calls
+ * /api/health with an 8-second timeout; the result is always shown (never stuck on "Checking…").
+ */
+export default function ServerSettings({ compact = false }) {
+  const { t } = useLang()
   const [url, setUrl] = useState(API_BASE)
-  const [status, setStatus] = useState('')
-  const navigate = useNavigate()
+  const [state, setState] = useState('idle') // idle | checking | ok | fail
+  const [health, setHealth] = useState(null)
+  const [error, setError] = useState(null)
 
-  const save = async () => {
-    setApiBase(url)
-    setStatus(lang === 'hi' ? 'जाँच रहे हैं…' : 'Checking…')
+  const test = async () => {
+    setError(null)
+    setHealth(null)
+    if (isNativeApp || url.trim()) {
+      const p = parseServerUrl(url)
+      if (!p.ok) {
+        setState('fail')
+        setError({ message: t('s_' + p.error) })
+        return
+      }
+      setUrl(p.url)
+      setApiBase(p.url)
+    } else {
+      setApiBase('')
+    }
+    setState('checking')
     try {
-      const m = await api.meta()
-      setStatus((lang === 'hi' ? '✓ जुड़ गया' : '✓ Connected') + (m.aiEnabled ? ' · AI on' : ''))
-      setTimeout(() => navigate('/'), 800)
+      const h = await api.health()
+      if (!h || !h.status) throw new Error('bad')
+      setHealth(h)
+      setState('ok')
     } catch (e) {
-      const unreachable = e.message === 'Failed to fetch' || e.name === 'TypeError'
-      setStatus('✗ ' + (unreachable
-        ? (lang === 'hi'
-          ? 'सर्वर तक नहीं पहुँचे। जाँचें: लैपटॉप पर backend चल रहा है, फ़ोन और लैपटॉप एक ही Wi-Fi पर हैं, Windows Firewall में port 8091 allow है, और पता http://IP:8091 जैसा है।'
-          : 'Could not reach the server. Check: backend is running on the laptop, phone and laptop are on the same Wi-Fi, Windows Firewall allows port 8091, and the address looks like http://IP:8091.')
-        : e.message))
+      setError(e)
+      setState('fail')
     }
   }
 
+  // show the status of an already saved address
+  useEffect(() => {
+    if (API_BASE || !isNativeApp) test()
+  }, []) // eslint-disable-line
+
+  const row = (label, value, good) => (
+    <div className="diag-row">
+      <span>{label}</span>
+      <span className={good ? 'ok-text' : 'muted'}>{value}</span>
+    </div>
+  )
+
   return (
     <section className="card stack" id="server">
-      <h3>{lang === 'hi' ? 'सर्वर' : 'Server'}</h3>
-      <p className="small muted">
-        {lang === 'hi'
-          ? 'बैकएंड का पता, जैसे https://xxxx.cloudfront.net या Wi-Fi पर http://192.168.1.5:8091'
-          : 'Backend address, e.g. https://xxxx.cloudfront.net or on Wi-Fi http://192.168.1.5:8091'}
-      </p>
+      <h3 className="card-title"><Server size={18} aria-hidden /> {t('serverAddress')}</h3>
+      {!compact && <p className="small muted">{t('serverHelp')}</p>}
       <div className="row gap">
-        <input className="input" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://..." inputMode="url" />
-        <button className="btn small" onClick={save}>{lang === 'hi' ? 'सेव' : 'Save'}</button>
+        <input className="input" value={url} onChange={(e) => setUrl(e.target.value)}
+          placeholder="https://your-server  or  http://<laptop-IP>:8091" inputMode="url" autoCapitalize="off" autoCorrect="off" spellCheck={false} />
+        <Button variant="secondary" loading={state === 'checking'} onClick={test}>{t('testConnection')}</Button>
       </div>
-      {status && <div className="small">{status}</div>}
+
+      {state === 'checking' && <Notice kind="info"><CircleDashed size={14} className="spin" aria-hidden /> {t('checking')}</Notice>}
+      {state === 'fail' && <Notice kind="error"><XCircle size={14} aria-hidden /> {errorText(error, t)}</Notice>}
+      {state === 'ok' && health && (
+        <>
+          <Notice kind="success"><CheckCircle2 size={14} aria-hidden /> {t('connected')} · {API_BASE || location.origin}</Notice>
+          <div className="diag">
+            {row(t('db'), health.database, health.database === 'UP')}
+            {row(t('ai'), health.ai === 'ENABLED' ? 'Amazon Bedrock' : 'Off', health.ai === 'ENABLED')}
+            {row(t('storage'), health.storage === 'S3' ? 'Amazon S3' : 'Server disk', health.storage === 'S3')}
+            {row(t('alertsSvc'), health.alerts === 'SNS' ? 'Amazon SNS' : 'Log only', health.alerts === 'SNS')}
+            {row(t('emailSvc'), health.email === 'smtp' ? 'Email (SMTP)' : health.email === 'dev-console' ? 'Dev console only' : 'Not configured', health.email === 'smtp')}
+          </div>
+        </>
+      )}
     </section>
   )
 }
