@@ -36,7 +36,9 @@ public final class Dtos {
             Instant lastConfirmedAt,
             boolean demo,
             String authorityNote,
-            Instant statusUpdatedAt) {
+            Instant statusUpdatedAt,
+            int clearVotes,
+            int clearVotesNeeded) {
 
         public static ReportView of(Report r) {
             Hotspot h = r.getHotspot();
@@ -55,7 +57,8 @@ public final class Dtos {
                     r.getNote(), r.getConfirmations(),
                     r.getStatus().name(), r.getCreatedAt(), r.getLastConfirmedAt(),
                     r.getDepthSource() == org.growforge.jalmarg.model.Enums.DepthSource.DEMO,
-                    r.getAuthorityNote(), r.getStatusUpdatedAt());
+                    r.getAuthorityNote(), r.getStatusUpdatedAt(),
+                    r.getClearVotes(), org.growforge.jalmarg.service.ReportService.clearVotesNeeded());
         }
     }
 

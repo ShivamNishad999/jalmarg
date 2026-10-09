@@ -7,4 +7,6 @@ import java.util.Optional;
 
 public interface ReportConfirmationRepository extends JpaRepository<ReportConfirmation, Long> {
     Optional<ReportConfirmation> findByReportIdAndUserId(Long reportId, Long userId);
+
+    long countByReportIdAndKind(Long reportId, ReportConfirmation.Kind kind);
 }

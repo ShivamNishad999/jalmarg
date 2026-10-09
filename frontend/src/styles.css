@@ -404,3 +404,8 @@ td:nth-child(2) { white-space: normal; min-width: 200px; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 .skeleton { display: block; }
 .rules li { margin: 0; }
+
+/* clear-vote progress on a report */
+.clear-progress { display: flex; flex-direction: column; gap: 4px; }
+.clear-bar { height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+.clear-bar span { display: block; height: 100%; background: var(--ok); border-radius: 3px; transition: width 0.3s; }

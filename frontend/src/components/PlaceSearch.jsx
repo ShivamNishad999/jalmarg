@@ -1,3 +1,4 @@
+import { MapPin } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { searchPlaces } from '../api'
 
@@ -28,7 +29,7 @@ export default function PlaceSearch({ value, onSelect, placeholder, extraOption 
       {open && (results.length > 0 || extraOption) && (
         <ul className="suggestions">
           {extraOption && (
-            <li><button onMouseDown={() => { extraOption.onClick(); setOpen(false) }}>📍 {extraOption.label}</button></li>
+            <li><button onMouseDown={() => { extraOption.onClick(); setOpen(false) }}><MapPin size={14} aria-hidden /> {extraOption.label}</button></li>
           )}
           {results.map((r, i) => (
             <li key={i}>

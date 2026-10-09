@@ -33,9 +33,18 @@ public class ReportService {
     private final AiDepthService ai;
     private final int ttlHours;
 
+    /** How many different people must say "water cleared" before a report leaves the live map. */
+    private static volatile int clearVotesNeeded = 5;
+
+    public static int clearVotesNeeded() {
+        return clearVotesNeeded;
+    }
+
     public ReportService(ReportRepository reports, ReportConfirmationRepository confirmations, HotspotService hotspotService,
                          StorageService storage, AiDepthService ai,
-                         @Value("${jalmarg.reports.ttl-hours}") int ttlHours) {
+                         @Value("${jalmarg.reports.ttl-hours}") int ttlHours,
+                         @Value("${jalmarg.reports.clear-votes:5}") int clearVotes) {
+        ReportService.clearVotesNeeded = Math.max(1, clearVotes);
         this.reports = reports;
         this.confirmations = confirmations;
         this.hotspotService = hotspotService;
@@ -174,6 +183,7 @@ public class ReportService {
         }
         r.setConfirmations(r.getConfirmations() + 1);
         r.setLastConfirmedAt(Instant.now());
+        r.setClearVotes((int) confirmations.countByReportIdAndKind(id, ReportConfirmation.Kind.CLEARED));
         if (r.getStatus() != ReportStatus.ACTIVE) {
             r.setStatus(ReportStatus.ACTIVE);
             r.setClearedAt(null);
@@ -181,7 +191,11 @@ public class ReportService {
         return reports.save(r);
     }
 
-    /** Someone passing by says "water has cleared". Recorded once per person. */
+    /**
+     * Someone passing by says "water has cleared". One vote per person. The report only leaves
+     * the live map once {@code clearVotesNeeded} different people agree and they are not
+     * outnumbered by "still flooded" votes, so one person cannot hide a flooded road.
+     */
     @Transactional
     public Report clear(long id, long userId) {
         Report r = get(id);
@@ -194,8 +208,13 @@ public class ReportService {
         } else {
             confirmations.save(new ReportConfirmation(id, userId, ReportConfirmation.Kind.CLEARED, Instant.now()));
         }
-        r.setStatus(ReportStatus.CLEARED);
-        r.setClearedAt(Instant.now());
+        int cleared = (int) confirmations.countByReportIdAndKind(id, ReportConfirmation.Kind.CLEARED);
+        int flooded = (int) confirmations.countByReportIdAndKind(id, ReportConfirmation.Kind.STILL_FLOODED);
+        r.setClearVotes(cleared);
+        if (cleared >= clearVotesNeeded && cleared >= flooded) {
+            r.setStatus(ReportStatus.CLEARED);
+            r.setClearedAt(Instant.now());
+        }
         return reports.save(r);
     }
 

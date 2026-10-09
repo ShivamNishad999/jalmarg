@@ -88,6 +88,43 @@ class ApiSmokeTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    /** One person must not be able to hide a flooded road: clearing needs 5 different people. */
+    @Test
+    void clearingNeedsFiveDifferentPeople() throws Exception {
+        String[] tokens = new String[6];
+        for (int i = 0; i < 6; i++) {
+            String email = "voter" + i + "@test.local";
+            String ip = "10.9.9." + (i + 1);
+            mvc.perform(post("/api/auth/register").header("X-Forwarded-For", ip).contentType(MediaType.APPLICATION_JSON)
+                            .content(body(java.util.Map.of("name", "Voter " + i, "email", email, "password", "Monsoon2026"))))
+                    .andExpect(status().isAccepted());
+            mvc.perform(post("/api/auth/verify-email").header("X-Forwarded-For", ip).contentType(MediaType.APPLICATION_JSON)
+                            .content(body(java.util.Map.of("email", email, "code", mail.lastDevCode(email)))))
+                    .andExpect(status().isOk());
+            String res = mvc.perform(post("/api/auth/login").header("X-Forwarded-For", ip).contentType(MediaType.APPLICATION_JSON)
+                            .content(body(java.util.Map.of("email", email, "password", "Monsoon2026"))))
+                    .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+            tokens[i] = "Bearer " + json.readTree(res).get("token").asText();
+        }
+        String rep = mvc.perform(multipart("/api/reports").header("Authorization", tokens[0])
+                        .param("latitude", "28.57").param("longitude", "77.32").param("depthLevel", "SHIN"))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        long id = json.readTree(rep).get("id").asLong();
+
+        for (int i = 1; i <= 4; i++) {
+            mvc.perform(post("/api/reports/" + id + "/clear").header("Authorization", tokens[i]))
+                    .andExpect(jsonPath("$.status").value("ACTIVE"))
+                    .andExpect(jsonPath("$.clearVotes").value(i))
+                    .andExpect(jsonPath("$.clearVotesNeeded").value(5));
+        }
+        // same person voting twice does not count twice
+        mvc.perform(post("/api/reports/" + id + "/clear").header("Authorization", tokens[4]))
+                .andExpect(jsonPath("$.clearVotes").value(4));
+        mvc.perform(post("/api/reports/" + id + "/clear").header("Authorization", tokens[5]))
+                .andExpect(jsonPath("$.status").value("CLEARED"))
+                .andExpect(jsonPath("$.clearVotes").value(5));
+    }
+
     @Test
     void citizenJourney() throws Exception {
         String email = "riya@test.local";

@@ -98,7 +98,9 @@ export function ReportCard({ r, onChange, compact = false }) {
     setMsg('')
     try {
       const updated = await fn(r.id)
-      setMsg(t('thanks'))
+      setMsg(fn === api.clear && updated.status === 'ACTIVE'
+        ? t('clearVoteSaved').replace('{n}', updated.clearVotes).replace('{m}', updated.clearVotesNeeded)
+        : t('thanks'))
       onChange && onChange(updated)
     } catch (e) {
       setMsg(errorText(e, t))
@@ -136,6 +138,12 @@ export function ReportCard({ r, onChange, compact = false }) {
       <p className="disclaimer">{t('estimateNote')}</p>
       {r.note && !r.demo && <p className="small">{r.note}</p>}
       {r.authorityNote && <p className="small authority-note"><Landmark size={14} aria-hidden /> {r.authorityNote}</p>}
+      {r.status === 'ACTIVE' && r.clearVotes > 0 && (
+        <div className="clear-progress" aria-label={t('clearProgress')}>
+          <div className="row between small"><span>{t('clearProgress')}</span><b>{r.clearVotes}/{r.clearVotesNeeded || 5} · {Math.min(100, Math.round((r.clearVotes / (r.clearVotesNeeded || 5)) * 100))}%</b></div>
+          <div className="clear-bar"><span style={{ width: Math.min(100, (r.clearVotes / (r.clearVotesNeeded || 5)) * 100) + '%' }} /></div>
+        </div>
+      )}
       {onChange && r.status === 'ACTIVE' && (
         user ? (
           <div className="row gap">

@@ -50,10 +50,13 @@ export function setApiBase(url) {
 /** True when the app knows where its backend is. */
 export const serverConfigured = () => !isNative || !!API_BASE
 
-// Map tiles: CARTO Voyager (OpenStreetMap data). Works inside the Android WebView, where
-// tile.openstreetmap.org may refuse requests without a website referrer.
-export const TILE_URL = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
-export const TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+// Map tiles: Esri World Street Map (no API key, works inside the Android WebView).
+// CARTO's free basemaps now show an "API key required" watermark, and tile.openstreetmap.org
+// refuses requests from apps without a website referrer. Override with VITE_TILE_URL if needed.
+export const TILE_URL = import.meta.env.VITE_TILE_URL ||
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}'
+export const TILE_ATTRIBUTION = import.meta.env.VITE_TILE_ATTRIBUTION ||
+  'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, &copy; OpenStreetMap contributors'
 
 // ---------------------------------------------------------------- errors
 

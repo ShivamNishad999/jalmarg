@@ -64,34 +64,71 @@ export default function RoutePage() {
     })
   }
 
+  const [detourMsg, setDetourMsg] = useState(null)
+
+  /** Runs promise-returning jobs a few at a time (the free routing server dislikes bursts). */
+  const pool = async (jobs, size = 4) => {
+    const out = []
+    for (let i = 0; i < jobs.length; i += size) {
+      out.push(...(await Promise.allSettled(jobs.slice(i, i + size).map((j) => j()))))
+    }
+    return out
+  }
+
   const find = async () => {
     setError(null)
+    setDetourMsg(null)
     if (!from || !to) return
     setBusy(true)
     setOptions([])
     try {
       const start = [from.lat, from.lng], end = [to.lat, to.lng]
+      const rank = (a, b) => a.blocking - b.blocking || a.risk - b.risk || a.durationMin - b.durationMin
       let routes = await scoreAll(await getRoutes([start, end], mode))
-      const fastest = routes[0]
+      routes.forEach((r, i) => { r.isFastest = i === 0; r.vias = [] })
+      const fastestMin = routes[0].durationMin
+      const hadBlocking = [...routes].sort(rank)[0].blocking > 0
 
-      // If every route crosses water that blocks this vehicle, try going around the worst spot.
-      if (routes.every((r) => r.blocking > 0)) {
-        const hz = [...fastest.hazards].sort((a, b) => b.depthFt - a.depthFt)[0]
-        const vias = [...detourPoints(fastest, hz, 700), ...detourPoints(fastest, hz, 1500)]
-        const extra = []
-        for (const v of vias) {
-          try {
-            const [r] = await getRoutes([start, v, end], mode, false)
-            if (r.durationMin < fastest.durationMin * 2.2) extra.push({ ...r, via: v })
-          } catch { /* ignore one failed detour */ }
+      // If even the best route crosses water that blocks this vehicle, try to go around it:
+      // add a waypoint beside each blocking spot (left/right, near and far), keep anything that
+      // is not absurdly long, and repeat once from the new best route.
+      const along = (p) => (p[0] - start[0]) * (end[0] - start[0]) + (p[1] - start[1]) * (end[1] - start[1])
+      for (let round = 0; round < 2; round++) {
+        routes.sort(rank)
+        const base = routes[0]
+        if (base.blocking === 0) break
+        const worst = base.hazards.filter((h) => h.depthFt >= LIMIT[mode]).sort((a, b) => b.depthFt - a.depthFt).slice(0, 2)
+        const jobs = []
+        for (const hz of worst) {
+          for (const metres of [800, 1800]) {
+            for (const v of detourPoints(base, hz, metres)) {
+              const vias = [...base.vias, v].sort((a, b) => along(a) - along(b))
+              jobs.push(async () => {
+                const [r] = await getRoutes([start, ...vias, end], mode, false)
+                return { ...r, vias }
+              })
+            }
+          }
         }
-        if (extra.length) routes = routes.concat(await scoreAll(extra))
+        const found = (await pool(jobs))
+          .filter((x) => x.status === 'fulfilled' && x.value.durationMin < fastestMin * 2.5)
+          .map((x) => x.value)
+        if (!found.length) break
+        routes = routes.concat(await scoreAll(found))
       }
 
-      routes.forEach((r, i) => { r.isFastest = i === 0 })
-      routes.sort((a, b) => a.blocking - b.blocking || a.risk - b.risk || a.durationMin - b.durationMin)
-      setOptions(routes.slice(0, 4))
+      routes.sort(rank)
+      // drop near-duplicates (same time and distance)
+      const seen = new Set()
+      const unique = routes.filter((r) => {
+        const k = Math.round(r.durationMin) + ':' + r.distanceKm.toFixed(1)
+        if (seen.has(k)) return false
+        seen.add(k)
+        return true
+      })
+      setOptions(unique.slice(0, 4))
       setChosen(0)
+      if (hadBlocking) setDetourMsg(unique[0].blocking === 0 ? 'found' : 'none')
     } catch (e) {
       setError(e)
     } finally {
@@ -102,7 +139,7 @@ export default function RoutePage() {
   const best = options[chosen]
   const mapsLink = best && from && to
     ? `https://www.google.com/maps/dir/?api=1&origin=${from.lat},${from.lng}&destination=${to.lat},${to.lng}` +
-      (best.via ? `&waypoints=${best.via[0].toFixed(5)},${best.via[1].toFixed(5)}` : '') +
+      (best.vias && best.vias.length ? `&waypoints=${best.vias.map((v) => `${v[0].toFixed(5)},${v[1].toFixed(5)}`).join('|')}` : '') +
       `&travelmode=${mode === 'walk' ? 'walking' : 'driving'}`
     : null
 
@@ -128,6 +165,7 @@ export default function RoutePage() {
         </Button>
         {error && <Notice kind="error">{errorText(error, t)}</Notice>}
 
+        {detourMsg === 'found' && <Notice kind="success">{t('detourFound')}</Notice>}
         {options.length > 0 && options[0].blocking > 0 && <Notice kind="warn"><AlertTriangle size={16} aria-hidden /> {t('noSafe')}</Notice>}
 
         <ul className="route-list">

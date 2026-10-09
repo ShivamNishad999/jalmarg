@@ -29,7 +29,7 @@ export default defineConfig({
         runtimeCaching: [
           {
             // map tiles: keep a cache so the map still shows on a weak connection
-            urlPattern: /^https:\/\/[abc]?\.?tile\.openstreetmap\.org\/.*/,
+            urlPattern: /^https:\/\/server\.arcgisonline\.com\/.*/,
             handler: 'CacheFirst',
             options: { cacheName: 'osm-tiles', expiration: { maxEntries: 600, maxAgeSeconds: 7 * 24 * 3600 } }
           },

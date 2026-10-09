@@ -61,6 +61,9 @@ public class Report {
     /** How many other people said "still flooded". */
     private int confirmations;
 
+    /** People (one vote each) currently saying the water has cleared. Nullable for older rows. */
+    private Integer clearVotes;
+
     @Enumerated(EnumType.STRING)
     private ReportStatus status = ReportStatus.ACTIVE;
 
@@ -113,6 +116,8 @@ public class Report {
     public void setNote(String note) { this.note = note; }
     public int getConfirmations() { return confirmations; }
     public void setConfirmations(int confirmations) { this.confirmations = confirmations; }
+    public int getClearVotes() { return clearVotes == null ? 0 : clearVotes; }
+    public void setClearVotes(int clearVotes) { this.clearVotes = clearVotes; }
     public ReportStatus getStatus() { return status; }
     public void setStatus(ReportStatus status) { this.status = status; }
     public Instant getCreatedAt() { return createdAt; }
