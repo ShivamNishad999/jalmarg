@@ -1,0 +1,69 @@
+# JalMarg API
+
+Base URL: `http://localhost:8080` locally, App Runner / EC2 URL in production. All JSON. Errors: `{"error": "message"}`.
+
+## Reports
+
+### `POST /api/reports` (multipart/form-data)
+| field | required | notes |
+|---|---|---|
+| `latitude`, `longitude` | ✅ | decimal degrees |
+| `photo` | one of photo / depthLevel | image file (frontend compresses to ≤1280px JPEG) |
+| `depthLevel` | one of photo / depthLevel | `PATCHY` 0.15 ft · `ANKLE` 0.35 · `SHIN` 0.8 · `KNEE` 1.5 · `WAIST` 3.0 |
+| `locationName`, `area`, `note` | | area = Delhi / Noida / Greater Noida / Ghaziabad / Gurugram (guessed if empty) |
+
+Returns `201` + **Report**:
+```json
+{
+  "id": 42, "latitude": 28.6347, "longitude": 77.2263,
+  "locationName": "Minto Bridge underpass", "hotspotId": 1, "hotspotName": "Minto Bridge underpass, Connaught Place", "area": "Delhi",
+  "photoUrl": "/api/photos/reports/2026-10-09/uuid.jpg",
+  "depthFt": 1.4, "citizenDepthLevel": "KNEE", "severity": "HIGH",
+  "depthSource": "AI_AND_CITIZEN",
+  "walkSafe": true, "bikeSafe": false, "carSafe": false,
+  "aiSummary": "Water reaches the scooter's footboard; two-wheelers should avoid. (judged from: scooter tyre)",
+  "aiSummaryHi": "पानी स्कूटर के फुटबोर्ड तक है; दोपहिया वाहन न जाएँ।",
+  "aiConfidence": 0.74, "note": null, "confirmations": 0, "status": "ACTIVE",
+  "createdAt": "2026-10-09T11:02:00Z", "lastConfirmedAt": "2026-10-09T11:02:00Z", "demo": false
+}
+```
+`severity`: LOW < 0.3 ft ≤ MODERATE < 0.8 ≤ HIGH < 1.5 ≤ SEVERE. `depthSource`: AI · CITIZEN · AI_AND_CITIZEN · DEMO.
+
+### Other report endpoints
+- `GET /api/reports/active?lat=&lng=&radiusKm=50` → Report[] (live map)
+- `GET /api/reports/recent?days=7` → Report[] (any status)
+- `GET /api/reports/{id}`
+- `POST /api/reports/{id}/confirm` → "still flooded" (+1, keeps it alive)
+- `POST /api/reports/{id}/clear` → "water cleared"
+- `GET /api/photos/{key}` → image bytes (from S3 or disk)
+
+## Routes
+`POST /api/routes/evaluate`
+```json
+{ "routes": [ [[28.62,77.36],[28.63,77.37]], [[...]] ], "bufferMeters": 60 }
+```
+→
+```json
+{ "recommendedIndex": 1,
+  "routes": [ { "index": 0, "hazardCount": 1, "riskScore": 8, "safeForBike": false, "safeForCar": false,
+                "hazards": [ { "reportId": 6, "locationName": "NH-9 underpass", "latitude": 28.628, "longitude": 77.369,
+                               "depthFt": 1.1, "severity": "HIGH", "distanceFromRouteM": 22 } ] } ] }
+```
+The frontend gets route geometry from OSRM, sends it here, and re-ranks for the chosen vehicle.
+
+## Alerts
+- `GET /api/alerts/feed?lat=&lng=&radiusKm=3&lang=en|hi` → `{ rainNext6hMm, maxHourlyMm, rainLevel, alerts: [{level,title,message,reportId,latitude,longitude}] }`
+- `POST /api/alerts/subscriptions` `{name,email,label,latitude,longitude,radiusKm,lang}` → Subscription (`emailAlertsActive` = SNS subscription created)
+- `GET /api/alerts/subscriptions?email=` · `DELETE /api/alerts/subscriptions/{id}?email=`
+- `POST /api/alerts/run` header `X-Jalmarg-Key` → `{sent: n}` (EventBridge Scheduler)
+- `GET /api/weather?lat=&lng=` → `{next6hMm, maxHourlyMm, level}`
+
+## Authority
+- `GET /api/hotspots` → Hotspot[] `{id,name,area,latitude,longitude,totalReports,reportsLast30Days,maxDepthFt,activeNow,firstSeen,lastSeen}`
+- `GET /api/authority/summary?area=&days=30` → KPIs, per-day counts, severity split, top 10 hotspots
+- `GET /api/authority/report.pdf?area=Noida` or `?hotspotId=3` → complaint PDF
+
+## Misc
+- `GET /api/meta` → `{aiEnabled, aiModel, s3Storage, snsAlerts, reportTtlHours}`
+- `POST /api/admin/demo-refresh` header `X-Jalmarg-Key` → re-creates the live demo reports
+- `GET /actuator/health`

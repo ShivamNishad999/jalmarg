@@ -1,0 +1,23 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "BedrockVision",
+      "Effect": "Allow",
+      "Action": ["bedrock:InvokeModel", "bedrock:Converse"],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReportPhotos",
+      "Effect": "Allow",
+      "Action": ["s3:PutObject", "s3:GetObject"],
+      "Resource": "arn:aws:s3:::REPLACE_WITH_BUCKET_NAME/*"
+    },
+    {
+      "Sid": "Alerts",
+      "Effect": "Allow",
+      "Action": ["sns:Publish", "sns:Subscribe"],
+      "Resource": "arn:aws:sns:ap-south-1:REPLACE_WITH_ACCOUNT_ID:jalmarg-alerts"
+    }
+  ]
+}
