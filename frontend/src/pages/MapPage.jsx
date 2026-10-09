@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet'
 import { Link } from 'react-router-dom'
-import { api, getPosition, NCR_CENTER, API_BASE, isNativeApp } from '../api'
+import { api, getPosition, NCR_CENTER, API_BASE, isNativeApp, TILE_URL, TILE_ATTRIBUTION } from '../api'
 import { useLang } from '../i18n'
 import { ReportCard, severityIcon, youIcon, SEV_HEX } from '../components/shared'
 
@@ -43,10 +43,7 @@ export default function MapPage() {
   return (
     <div className="map-page">
       <MapContainer center={NCR_CENTER} zoom={11} className="map-full" zoomControl={false}>
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+        <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} />
         <FlyTo pos={me} />
         {me && (
           <>
@@ -80,7 +77,7 @@ export default function MapPage() {
         </div>
         {error && <div className="banner err">{error}</div>}
         {isNativeApp && !API_BASE && (
-          <Link to="/about#server" className="banner warn">⚙️ Set the server address first (About → Server)</Link>
+          <Link to="/server" className="banner warn">{t('setServer')}</Link>
         )}
       </div>
 

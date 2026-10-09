@@ -66,9 +66,9 @@ export default function AboutPage() {
 
       <h2>{lang === 'hi' ? 'सुरक्षा नियम' : 'Safety rules we use'}</h2>
       <ul className="rules">
-        <li>🛵 {lang === 'hi' ? '0.5 फीट से ज़्यादा: बाइक/स्कूटर के लिए खतरनाक' : 'Over 0.5 ft: unsafe for two-wheelers'}</li>
-        <li>🚗 {lang === 'hi' ? '0.8 फीट से ज़्यादा: कार के लिए खतरनाक' : 'Over 0.8 ft: unsafe for cars'}</li>
-        <li>🚶 {lang === 'hi' ? '1.5 फीट से ज़्यादा: पैदल खतरनाक (खुले नाले छिप जाते हैं)' : 'Over 1.5 ft: unsafe on foot (open drains are hidden)'}</li>
+        <li>🛵 {lang === 'hi' ? '0.5 फीट से ज़्यादा: बाइक/स्कूटर के लिए ज़्यादा खतरा' : 'Over 0.5 ft: high risk for two-wheelers'}</li>
+        <li>🚗 {lang === 'hi' ? '0.8 फीट से ज़्यादा: कार के लिए ज़्यादा खतरा' : 'Over 0.8 ft: high risk for cars'}</li>
+        <li>🚶 {lang === 'hi' ? '1.5 फीट से ज़्यादा: पैदल ज़्यादा खतरा (खुले नाले छिप जाते हैं)' : 'Over 1.5 ft: high risk on foot (open drains are hidden)'}</li>
       </ul>
       <p className="small muted">
         {lang === 'hi'

@@ -17,7 +17,13 @@ export function setApiBase(url) {
 }
 
 /** True when running inside the installed Android app (Capacitor). */
-export const isNativeApp = typeof window !== 'undefined' && !!window.Capacitor?.isNativePlatform?.()
+export { isNative as isNativeApp } from './native'
+import { isNative, nativePosition } from './native'
+
+// Map tiles: CARTO Voyager (OpenStreetMap data). Works inside the Android WebView, where
+// tile.openstreetmap.org may refuse requests without a website referrer.
+export const TILE_URL = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
+export const TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
 
 async function request(path, options = {}) {
   const res = await fetch(API_BASE + path, options)
@@ -115,6 +121,7 @@ export async function getRoutes(points, mode = 'car', alternatives = true) {
 
 /** Current GPS position as a promise. */
 export function getPosition() {
+  if (isNative) return nativePosition()
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) return reject(new Error('Location not supported'))
     navigator.geolocation.getCurrentPosition(

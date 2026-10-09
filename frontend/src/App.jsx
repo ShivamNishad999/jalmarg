@@ -1,4 +1,5 @@
-import { NavLink, Route, Routes, Link } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { NavLink, Route, Routes, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useLang } from './i18n'
 import MapPage from './pages/MapPage'
 import ReportPage from './pages/ReportPage'
@@ -6,6 +7,8 @@ import RoutePage from './pages/RoutePage'
 import AlertsPage from './pages/AlertsPage'
 import AuthorityPage from './pages/AuthorityPage'
 import AboutPage from './pages/AboutPage'
+import ServerSettings from './components/ServerSettings'
+import { initNative, watchNetwork } from './native'
 
 const NAV = [
   { to: '/', key: 'nav_map', icon: '🗺️', end: true },
@@ -17,6 +20,16 @@ const NAV = [
 
 export default function App() {
   const { t, lang, setLang } = useLang()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const pathRef = useRef(location.pathname)
+  pathRef.current = location.pathname
+  const [online, setOnline] = useState(true)
+
+  // Android: status bar, splash, back button. Browser: nothing.
+  useEffect(() => initNative(navigate, () => pathRef.current), [navigate])
+  useEffect(() => watchNetwork(setOnline), [])
+
   return (
     <div className="app">
       <header className="topbar">
@@ -42,6 +55,8 @@ export default function App() {
         </button>
       </header>
 
+      {!online && <div className="offline-bar" role="status">{t('offline')}</div>}
+
       <main className="content">
         <Routes>
           <Route path="/" element={<MapPage />} />
@@ -50,6 +65,7 @@ export default function App() {
           <Route path="/alerts" element={<AlertsPage />} />
           <Route path="/authority" element={<AuthorityPage />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/server" element={<div className="page narrow"><ServerSettings /></div>} />
           <Route path="*" element={<MapPage />} />
         </Routes>
       </main>

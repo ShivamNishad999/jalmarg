@@ -144,13 +144,13 @@ public class AlertService {
     static String describe(Report r, double km, boolean hi) {
         String vehicles;
         if (hi) {
-            vehicles = !r.isBikeSafe() && !r.isCarSafe() ? "बाइक और कार दोनों के लिए खतरनाक"
-                    : !r.isBikeSafe() ? "बाइक/स्कूटर के लिए खतरनाक" : "धीरे चलें";
-            return String.format(Locale.ROOT, "%.1f km दूर, लगभग %.1f फीट पानी। %s।", km, r.getDepthFt(), vehicles);
+            vehicles = !r.isBikeSafe() && !r.isCarSafe() ? "बाइक और कार दोनों के लिए ज़्यादा खतरा"
+                    : !r.isBikeSafe() ? "बाइक/स्कूटर के लिए ज़्यादा खतरा" : "धीरे चलें";
+            return String.format(Locale.ROOT, "%.1f km दूर, अनुमानित %.1f फीट पानी। %s।", km, r.getDepthFt(), vehicles);
         }
-        vehicles = !r.isBikeSafe() && !r.isCarSafe() ? "unsafe for bikes and cars"
-                : !r.isBikeSafe() ? "unsafe for bikes/scooters" : "drive slowly";
-        return String.format(Locale.ROOT, "%.1f km away, about %.1f ft of water, %s.", km, r.getDepthFt(), vehicles);
+        vehicles = !r.isBikeSafe() && !r.isCarSafe() ? "high risk for bikes and cars"
+                : !r.isBikeSafe() ? "high risk for bikes/scooters" : "drive slowly";
+        return String.format(Locale.ROOT, "%.1f km away, estimated %.1f ft of water, %s.", km, r.getDepthFt(), vehicles);
     }
 
     // ---------------------------------------------------------------- scheduled push

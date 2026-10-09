@@ -274,3 +274,13 @@ td:nth-child(2) { white-space: normal; min-width: 200px; }
 .aws-item { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid #ff9900; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; font-size: 0.9rem; }
 .aws-item span { color: var(--muted); font-size: 0.82rem; }
 .rules { padding-left: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+
+/* ---------- Android app + status ---------- */
+/* Android 15+ draws the app edge to edge: keep the top bar clear of the status bar */
+.topbar { padding-top: env(safe-area-inset-top); height: calc(var(--topbar-h) + env(safe-area-inset-top)); }
+.bottomnav { height: calc(var(--bottomnav-h) + env(safe-area-inset-bottom)); }
+.offline-bar { background: #7a4b00; color: #fff; font-size: 0.85rem; padding: 8px 16px; text-align: center; flex: none; }
+.disclaimer { margin: 0; font-size: 0.75rem; line-height: 1.4; }
+.chip { text-transform: none; }
+/* comfortable touch targets on phones */
+@media (pointer: coarse) { .btn.small { min-height: 40px; } }

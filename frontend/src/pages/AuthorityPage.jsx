@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { MapContainer, TileLayer, CircleMarker, Tooltip } from 'react-leaflet'
-import { api, NCR_CENTER } from '../api'
+import { api, NCR_CENTER, TILE_URL, TILE_ATTRIBUTION } from '../api'
 import { useLang } from '../i18n'
 import { SEV_HEX } from '../components/shared'
 
@@ -81,7 +81,7 @@ export default function AuthorityPage() {
             </section>
             <section className="card map-card">
               <MapContainer center={NCR_CENTER} zoom={10} style={{ height: '100%' }} scrollWheelZoom={false}>
-                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" />
+                <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} />
                 {s.topHotspots.map((h) => (
                   <CircleMarker key={h.id} center={[h.latitude, h.longitude]} radius={6 + h.totalReports}
                     pathOptions={{ color: h.activeNow ? SEV_HEX.SEVERE : SEV_HEX.HIGH, fillOpacity: 0.45, weight: 1 }}>

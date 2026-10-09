@@ -125,12 +125,14 @@ export function ReportCard({ r, onChange, compact = false }) {
       <div className="report-depth">
         <DepthGauge ft={r.depthFt} />
         <div>
-          <div className="depth-num">{r.depthFt.toFixed(1)} <small>{t('ft')}</small></div>
+          <div className="depth-num">≈{r.depthFt.toFixed(1)} <small>{t('ft')}</small></div>
+          <div className="muted small">{t('estDepth')}</div>
           {src && <div className="muted small">{src}{r.aiConfidence != null && ` · ${Math.round(r.aiConfidence * 100)}%`}</div>}
           {summary && <p className="ai-summary">“{summary}”</p>}
         </div>
       </div>
       <SafetyChips r={r} />
+      <p className="small muted disclaimer">{t('estimateNote')}</p>
       {r.note && !r.demo && <p className="small">{r.note}</p>}
       {onChange && r.status === 'ACTIVE' && (
         <div className="row gap">

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet'
 import { Link, useNavigate } from 'react-router-dom'
-import { api, compressImage, getPosition, reverseGeocode, NCR_CENTER, isNativeApp } from '../api'
+import { api, compressImage, getPosition, reverseGeocode, NCR_CENTER, isNativeApp, TILE_URL, TILE_ATTRIBUTION } from '../api'
 import { useLang } from '../i18n'
 import { ReportCard, severityIcon } from '../components/shared'
 
@@ -21,7 +21,9 @@ function Recenter({ pos }) {
 export default function ReportPage() {
   const { t, lang } = useLang()
   const navigate = useNavigate()
-  const fileRef = useRef()
+  const fileRef = useRef()     // camera
+  const galleryRef = useRef()  // gallery / files
+  const sendingRef = useRef(false) // blocks double-taps before React re-renders
   const [pos, setPos] = useState(null)
   const [locating, setLocating] = useState(false)
   const [place, setPlace] = useState('')
@@ -40,7 +42,8 @@ export default function ReportPage() {
       const p = await getPosition()
       setPos(p)
     } catch {
-      setError(t('needLocation'))
+      // GPS off or permission denied: the user can still tap the map to place the pin
+      setError(t('locationFallback'))
     } finally {
       setLocating(false)
     }
@@ -58,7 +61,11 @@ export default function ReportPage() {
 
   const onPhoto = async (e) => {
     const f = e.target.files?.[0]
+    e.target.value = '' // allow picking the same file again
     if (!f) return
+    if (!f.type.startsWith('image/')) return setError(t('notImage'))
+    if (f.size > 25 * 1024 * 1024) return setError(t('tooBig'))
+    setError('')
     const small = await compressImage(f)
     setPhoto(small)
     setPreview((old) => { if (old) URL.revokeObjectURL(old); return URL.createObjectURL(small) })
@@ -75,13 +82,16 @@ export default function ReportPage() {
     if (level) fd.append('depthLevel', level)
     if (note) fd.append('note', note.slice(0, 500))
     if (photo) fd.append('photo', photo, 'photo.jpg')
+    if (sendingRef.current) return
+    sendingRef.current = true
     setBusy(true)
     try {
       setResult(await api.createReport(fd))
       window.scrollTo(0, 0)
     } catch (e) {
-      setError(e.message)
+      setError(e.message === 'Failed to fetch' ? t('serverUnreachable') : e.message)
     } finally {
+      sendingRef.current = false
       setBusy(false)
     }
   }
@@ -100,6 +110,7 @@ export default function ReportPage() {
         <div className="success-badge">✓</div>
         <h1>{t('resultTitle')}</h1>
         <p className="muted">{t('resultSub')}</p>
+        <p className="small muted">Report #{result.id} · {new Date(result.createdAt).toLocaleString(lang === 'hi' ? 'hi-IN' : 'en-IN')}</p>
         <ReportCard r={result} />
         <div className="stack">
           <a className="btn whatsapp" href={`https://wa.me/?text=${encodeURIComponent(msg)}`} target="_blank" rel="noreferrer">
@@ -121,7 +132,7 @@ export default function ReportPage() {
         <h3><span className="step-n">1</span>{t('step1')}</h3>
         <div className="mini-map">
           <MapContainer center={pos ? [pos.lat, pos.lng] : NCR_CENTER} zoom={pos ? 16 : 11} style={{ height: '100%' }}>
-            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" />
+            <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} />
             <Recenter pos={pos} />
             <PickOnMap onPick={setPos} />
             {pos && (
@@ -144,6 +155,7 @@ export default function ReportPage() {
       <section className="card step">
         <h3><span className="step-n">2</span>{t('step2')}</h3>
         <input ref={fileRef} type="file" accept="image/*" capture="environment" hidden onChange={onPhoto} />
+        <input ref={galleryRef} type="file" accept="image/*" hidden onChange={onPhoto} />
         {preview ? (
           <img src={preview} alt="" className="photo-preview" onClick={() => fileRef.current.click()} />
         ) : (
@@ -152,7 +164,15 @@ export default function ReportPage() {
             <b>{t('takePhoto')}</b>
           </button>
         )}
-        {preview && <button className="btn small ghost" onClick={() => fileRef.current.click()}>{t('changePhoto')}</button>}
+        <div className="row gap wrap">
+          {preview && <button className="btn small ghost" onClick={() => fileRef.current.click()}>{t('changePhoto')}</button>}
+          <button className="btn small ghost" onClick={() => galleryRef.current.click()}>🖼️ {t('fromGallery')}</button>
+          {preview && (
+            <button className="btn small ghost" onClick={() => { setPhoto(null); setPreview((old) => { if (old) URL.revokeObjectURL(old); return null }) }}>
+              ✕ {t('removePhoto')}
+            </button>
+          )}
+        </div>
         <p className="small muted">💡 {t('photoHint')}</p>
       </section>
 

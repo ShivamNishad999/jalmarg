@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { MapContainer, TileLayer, Marker, Circle, useMapEvents, useMap } from 'react-leaflet'
 import { useEffect } from 'react'
-import { api, getPosition, NCR_CENTER } from '../api'
+import { api, getPosition, NCR_CENTER, TILE_URL, TILE_ATTRIBUTION } from '../api'
 import { useLang } from '../i18n'
 import { youIcon } from '../components/shared'
 
@@ -90,7 +90,7 @@ export default function AlertsPage() {
         </div>
         <div className="mini-map">
           <MapContainer center={NCR_CENTER} zoom={10} style={{ height: '100%' }}>
-            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" />
+            <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} />
             <Picker onPick={setPos} />
             <Follow pos={pos} />
             {pos && <>

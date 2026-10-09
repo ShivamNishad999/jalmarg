@@ -4,7 +4,7 @@ name: Android app (APK)
 # JalMarg.apk on the "app-latest" GitHub release, so anyone can install it on a phone.
 on:
   push:
-    branches: [main]
+    branches: [main, feat/android-app]
     paths: ['frontend/**', '.github/workflows/android.yml']
   workflow_dispatch:
 

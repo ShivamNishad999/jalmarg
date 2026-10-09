@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
-import { api, getPosition, getRoutes, NCR_CENTER } from '../api'
+import { api, getPosition, getRoutes, NCR_CENTER, TILE_URL, TILE_ATTRIBUTION } from '../api'
 import { useLang } from '../i18n'
 import PlaceSearch from '../components/PlaceSearch'
 import { severityIcon, youIcon, SEV_HEX } from '../components/shared'
@@ -158,7 +158,7 @@ export default function RoutePage() {
 
       <div className="map-wrap">
         <MapContainer center={NCR_CENTER} zoom={11} className="map-full">
-          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" />
+          <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} />
           <FitBounds routes={options} />
           {from && <Marker position={[from.lat, from.lng]} icon={youIcon} />}
           {to && <Marker position={[to.lat, to.lng]} icon={destIcon} />}
