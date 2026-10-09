@@ -37,7 +37,7 @@ public class StorageService {
                           @Value("${jalmarg.storage.local-dir}") String localDir) throws IOException {
         this.s3 = s3;
         this.bucket = bucket == null ? "" : bucket.trim();
-        this.localDir = Paths.get(localDir).toAbsolutePath();
+        this.localDir = Paths.get(localDir).toAbsolutePath().normalize();
         Files.createDirectories(this.localDir);
         log.info("Photo storage: {}", usingS3() ? "S3 bucket " + this.bucket : "local dir " + this.localDir);
     }

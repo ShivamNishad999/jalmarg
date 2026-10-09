@@ -40,7 +40,7 @@ To make someone an authority officer: set `ADMIN_EMAIL`/`ADMIN_PASSWORD` once, s
 IAM → Roles → *Create* → trusted entity **EC2** → create an inline policy from [`infra/iam-policy.json`](../infra/iam-policy.json) (replace bucket name and account id). Name it `jalmarg-backend-role`.
 
 ## 6. EC2 — run the Spring Boot API on Amazon Corretto
-1. Launch instance: **Amazon Linux 2023**, `t3.micro` (free tier), attach `jalmarg-backend-role`, security group inbound **TCP 8091** from anywhere (CloudFront needs it) + SSH from your IP.
+1. Launch instance: **Amazon Linux 2023**, `t3.micro` (free tier), attach `jalmarg-backend-role`, security group inbound **TCP 8080** from anywhere (CloudFront needs it) + SSH from your IP.
 2. SSH in and run:
 ```bash
 sudo dnf install -y java-21-amazon-corretto-devel maven git
@@ -78,14 +78,14 @@ WantedBy=multi-user.target
 ```bash
 sudo chown -R ec2-user /opt/jalmarg
 sudo systemctl daemon-reload && sudo systemctl enable --now jalmarg
-curl localhost:8091/api/meta      # {"aiEnabled":true,...}
+curl localhost:8080/api/meta      # {"aiEnabled":true,...}
 journalctl -u jalmarg -f          # logs
 ```
 > t3.micro has 1 GB RAM. If Maven runs out of memory while building, build the jar on a laptop and `scp` it to the instance.
 
 ## 7. CloudFront — HTTPS in front of EC2
 The frontend is HTTPS, so the API must be too.
-CloudFront → *Create distribution* → Origin domain: the EC2 **public DNS**, protocol **HTTP only**, port **8091** → Viewer protocol: *Redirect HTTP to HTTPS* → Allowed methods: **GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE** → Cache policy **CachingDisabled** → Origin request policy **AllViewerExceptHostHeader** → Create. The API URL is `https://dxxxx.cloudfront.net`.
+CloudFront → *Create distribution* → Origin domain: the EC2 **public DNS**, protocol **HTTP only**, port **8080** → Viewer protocol: *Redirect HTTP to HTTPS* → Allowed methods: **GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE** → Cache policy **CachingDisabled** → Origin request policy **AllViewerExceptHostHeader** → Create. The API URL is `https://dxxxx.cloudfront.net`.
 
 ## 8. AWS Amplify Hosting — the PWA
 Amplify → *Create new app* → GitHub → this repo, branch `main`. Amplify reads [`amplify.yml`](../amplify.yml) (app root `frontend`).

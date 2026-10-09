@@ -27,4 +27,13 @@ public final class Enums {
     public enum Role { CITIZEN, AUTHORITY, ADMIN }
 
     public enum OtpPurpose { VERIFY_EMAIL, RESET_PASSWORD }
+
+    /** Autonomous risk assessment levels. */
+    public enum RiskLevel { LOW, MODERATE, HIGH, CRITICAL, UNKNOWN }
+
+    /** Distinction between actual confirmed waterlogging and forecast-based potential risk. */
+    public enum RiskStatus { OBSERVED_FLOODING, PREDICTED_RISK, NO_IMMEDIATE_RISK, UNKNOWN }
+
+    /** Data quality state of underlying weather/telemetry. */
+    public enum DataQuality { FRESH, STALE, MISSING_TELEMETRY }
 }

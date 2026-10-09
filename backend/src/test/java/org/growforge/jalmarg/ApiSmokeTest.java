@@ -24,6 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "spring.datasource.url=jdbc:h2:mem:smoke;MODE=MySQL;DB_CLOSE_DELAY=-1",
         "jalmarg.storage.local-dir=target/test-uploads",
         "jalmarg.alerts.internal-scheduler=false",
+        "jalmarg.monitor.enabled=false",
         "jalmarg.alerts.run-key=test-key",
         "jalmarg.auth.dev-otp-log=true",
         "jalmarg.auth.admin-email=admin@test.local",

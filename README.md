@@ -50,7 +50,7 @@ amplify.yml Amplify Hosting build for frontend/
 ```bash
 cd backend
 mvn spring-boot:run
-# → http://localhost:8091/api/meta   (H2 database + demo data are created automatically)
+# → http://localhost:8080/api/meta   (H2 database + demo data are created automatically)
 ```
 In Eclipse/IntelliJ: import `backend` as a Maven project and run `JalMargApplication`.
 
@@ -59,7 +59,7 @@ In Eclipse/IntelliJ: import `backend` as a Maven project and run `JalMargApplica
 cd frontend
 npm install
 npm run dev
-# → http://localhost:5173  (calls to /api are proxied to localhost:8091)
+# → http://localhost:5173  (calls to /api are proxied to localhost:8080)
 ```
 
 Without AWS settings the app runs fully: photos are stored in `backend/uploads/`, depth comes from the reporter's choice, alerts are written to the log. Turn on AWS features with environment variables — see [`docs/DEPLOY_AWS.md`](docs/DEPLOY_AWS.md).

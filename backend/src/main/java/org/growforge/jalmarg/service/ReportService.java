@@ -32,6 +32,7 @@ public class ReportService {
     private final StorageService storage;
     private final AiDepthService ai;
     private final int ttlHours;
+    private final boolean demoIsolatedMode;
 
     /** How many different people must say "water cleared" before a report leaves the live map. */
     private static volatile int clearVotesNeeded = 5;
@@ -40,10 +41,12 @@ public class ReportService {
         return clearVotesNeeded;
     }
 
+    @org.springframework.beans.factory.annotation.Autowired
     public ReportService(ReportRepository reports, ReportConfirmationRepository confirmations, HotspotService hotspotService,
                          StorageService storage, AiDepthService ai,
                          @Value("${jalmarg.reports.ttl-hours}") int ttlHours,
-                         @Value("${jalmarg.reports.clear-votes:5}") int clearVotes) {
+                         @Value("${jalmarg.reports.clear-votes:5}") int clearVotes,
+                         @Value("${jalmarg.demo.isolated-mode:false}") boolean demoIsolatedMode) {
         ReportService.clearVotesNeeded = Math.max(1, clearVotes);
         this.reports = reports;
         this.confirmations = confirmations;
@@ -51,16 +54,37 @@ public class ReportService {
         this.storage = storage;
         this.ai = ai;
         this.ttlHours = ttlHours;
+        this.demoIsolatedMode = demoIsolatedMode;
+    }
+
+    /** For plain unit tests (no vote table, default thresholds). */
+    public ReportService(ReportRepository reports, HotspotService hotspotService,
+                         StorageService storage, AiDepthService ai, int ttlHours) {
+        this(reports, null, hotspotService, storage, ai, ttlHours, 5, false);
+    }
+
+    public ReportService(ReportRepository reports, HotspotService hotspotService,
+                         StorageService storage, AiDepthService ai, int ttlHours, boolean demoIsolatedMode) {
+        this(reports, null, hotspotService, storage, ai, ttlHours, 5, demoIsolatedMode);
     }
 
     public int getTtlHours() {
         return ttlHours;
     }
 
+    public boolean isDemoIsolatedMode() {
+        return demoIsolatedMode;
+    }
+
     /** Input for a new report (photo optional, depth level optional, but at least one needed). */
     public record NewReport(double latitude, double longitude, String locationName, String area,
                             DepthLevel depthLevel, String note,
-                            byte[] photo, String photoContentType, Long reporterId) {}
+                            byte[] photo, String photoContentType, Long reporterId) {
+        public NewReport(double latitude, double longitude, String locationName, String area,
+                         DepthLevel depthLevel, String note, byte[] photo, String photoContentType) {
+            this(latitude, longitude, locationName, area, depthLevel, note, photo, photoContentType, null);
+        }
+    }
 
     @Transactional
     public Report create(NewReport in) throws IOException {
@@ -72,6 +96,47 @@ public class ReportService {
         }
 
         Instant now = Instant.now();
+
+        // Duplicate report detection: within 50m and 20 mins of an existing active report
+        List<Report> existingNearby = activeNear(in.latitude(), in.longitude(), 0.05); // 50 meters
+        // (never merge a real report into illustrative demo data)
+        Report duplicateCandidate = existingNearby.stream()
+                .filter(ex -> ex.getDepthSource() != DepthSource.DEMO)
+                .filter(ex -> ex.getLastConfirmedAt().isAfter(now.minus(Duration.ofMinutes(20))))
+                .findFirst()
+                .orElse(null);
+
+        if (duplicateCandidate != null) {
+            // A second report of the same spot counts as that person's "still flooded" vote (once per person).
+            boolean alreadyVoted = false;
+            if (confirmations != null && in.reporterId() != null) {
+                long rid = duplicateCandidate.getId();
+                var existing = confirmations.findByReportIdAndUserId(rid, in.reporterId());
+                alreadyVoted = existing.isPresent() && existing.get().getKind() == ReportConfirmation.Kind.STILL_FLOODED;
+                if (existing.isPresent()) {
+                    existing.get().setKind(ReportConfirmation.Kind.STILL_FLOODED);
+                    existing.get().setCreatedAt(now);
+                    confirmations.save(existing.get());
+                } else if (!in.reporterId().equals(duplicateCandidate.getReporterId())) {
+                    confirmations.save(new ReportConfirmation(rid, in.reporterId(), ReportConfirmation.Kind.STILL_FLOODED, now));
+                } else {
+                    alreadyVoted = true;
+                }
+            }
+            if (!alreadyVoted) duplicateCandidate.setConfirmations(duplicateCandidate.getConfirmations() + 1);
+            duplicateCandidate.setLastConfirmedAt(now);
+            if (in.photo() != null && in.photo().length > 0 && duplicateCandidate.getPhotoKey() == null) {
+                duplicateCandidate.setPhotoKey(storage.save(in.photo(), in.photoContentType()));
+            }
+            if (in.depthLevel() != null && in.depthLevel().feet > duplicateCandidate.getDepthFt()) {
+                duplicateCandidate.setDepthFt(in.depthLevel().feet);
+                duplicateCandidate.setCitizenDepthLevel(in.depthLevel());
+                SafetyRules.apply(duplicateCandidate);
+            }
+            log.info("Merged duplicate report near {} into report #{}", duplicateCandidate.getLocationName(), duplicateCandidate.getId());
+            return reports.save(duplicateCandidate);
+        }
+
         Report r = new Report();
         r.setLatitude(in.latitude());
         r.setLongitude(in.longitude());
@@ -109,8 +174,9 @@ public class ReportService {
      * - citizen only       -> citizen depth
      * - both, AI confident -> weighted mix (AI 60%, citizen 40%)
      * - both, AI unsure or says "no water" -> trust the citizen, keep AI note
+     * - photo only, AI off or uncertain   -> 0.0 ft unmeasured visual report (never fabricate 0.3 ft)
      */
-    static void fuseDepth(Report r, DepthLevel level, AiDepthService.AiResult aiResult) {
+    public static void fuseDepth(Report r, DepthLevel level, AiDepthService.AiResult aiResult) {
         boolean hasAi = aiResult != null && aiResult.waterVisible();
         if (aiResult != null) {
             r.setAiConfidence(aiResult.confidence());
@@ -131,9 +197,17 @@ public class ReportService {
             r.setDepthFt(level.feet);
             r.setDepthSource(DepthSource.CITIZEN);
         } else {
-            // photo only, AI off or saw no water: record as shallow, unverified
-            r.setDepthFt(aiResult != null ? aiResult.depthFt() : 0.3);
+            // Photo only, AI off or saw no water: record as 0.0 unmeasured visual report
+            // Does NOT misrepresent an unknown depth as a measured 0.3 ft value
+            double depth = (aiResult != null && aiResult.depthFt() > 0) ? aiResult.depthFt() : 0.0;
+            r.setDepthFt(depth);
             r.setDepthSource(aiResult != null ? DepthSource.AI : DepthSource.CITIZEN);
+            if (r.getAiSummary() == null || r.getAiSummary().isBlank()) {
+                r.setAiSummary("Visual observation: depth unmeasured (photo uploaded without depth selection).");
+            }
+            if (r.getAiSummaryHi() == null || r.getAiSummaryHi().isBlank()) {
+                r.setAiSummaryHi("दृश्य अवलोकन: गहराई अनमापी (गहराई चयन के बिना फोटो अपलोड)।");
+            }
         }
     }
 
@@ -144,12 +218,26 @@ public class ReportService {
 
     @Transactional(readOnly = true)
     public List<Report> active() {
-        return reports.findByStatusOrderByCreatedAtDesc(ReportStatus.ACTIVE);
+        return active(false);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Report> active(boolean forceIncludeDemo) {
+        var list = reports.findByStatusOrderByCreatedAtDesc(ReportStatus.ACTIVE);
+        if (demoIsolatedMode && !forceIncludeDemo) {
+            return list.stream().filter(r -> r.getDepthSource() != DepthSource.DEMO).toList();
+        }
+        return list;
     }
 
     @Transactional(readOnly = true)
     public List<Report> activeNear(double lat, double lng, double radiusKm) {
-        return active().stream()
+        return activeNear(lat, lng, radiusKm, false);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Report> activeNear(double lat, double lng, double radiusKm, boolean forceIncludeDemo) {
+        return active(forceIncludeDemo).stream()
                 .filter(r -> Geo.distanceM(lat, lng, r.getLatitude(), r.getLongitude()) <= radiusKm * 1000)
                 .sorted(Comparator.comparingDouble(r -> Geo.distanceM(lat, lng, r.getLatitude(), r.getLongitude())))
                 .toList();

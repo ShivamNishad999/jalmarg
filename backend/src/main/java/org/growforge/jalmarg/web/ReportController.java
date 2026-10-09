@@ -75,13 +75,13 @@ public class ReportController {
         return ReportView.of(reportService.get(id));
     }
 
-    /** "Still flooded" from someone passing by. */
+    /** "Still flooded" from someone passing by. One vote per signed-in person. */
     @PostMapping("/{id}/confirm")
     public ReportView confirm(@PathVariable long id) {
         return ReportView.of(reportService.confirm(id, AuthUser.current().id()));
     }
 
-    /** "Water has cleared" from someone passing by. */
+    /** "Water has cleared" from someone passing by. One vote per signed-in person. */
     @PostMapping("/{id}/clear")
     public ReportView clear(@PathVariable long id) {
         return ReportView.of(reportService.clear(id, AuthUser.current().id()));
