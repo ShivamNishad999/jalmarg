@@ -1,34 +1,29 @@
 # Team Growforge — who does what
 
-Core app is built and in this repo. Remaining work is **deploy, test with real photos, polish, video, submit**.
-Internal deadline: **Sunday 4 PM** (hackathon ends Sunday evening; submissions open Sunday 8 AM).
+Internal deadline: **Sunday 4 PM** (submissions open Sunday 8 AM). Work on `feat/<name>-<thing>` branches; Shivam merges.
+Sync calls: 1 PM and 10 PM, 15 minutes.
 
-## Shivam Nishad (lead) — backend + integration + video
-- [ ] Run backend locally (`mvn spring-boot:run`) and frontend (`npm run dev`), click through every screen
-- [ ] Review / merge PRs; keep `main` always deployable
-- [ ] Test 10+ real waterlogging photos with `AI_ENABLED=true`, tune the prompt in `AiDepthService` if depths look off
-- [ ] Record + edit the 3-minute demo video (`docs/DEMO_VIDEO_SCRIPT.md`)
-- [ ] Fill the submission form
+## Shivam Nishad (lead) — Android app + video
+- [ ] Android app with Capacitor from `frontend/` (branch `feat/android-app`): camera, GPS, app icon, Server URL setting
+- [ ] APK is built by GitHub Actions (`.github/workflows/android.yml`) and published on the `app-latest` release
+- [ ] Test on phone: photo report, live map, safe route
+- [ ] Record the 3-minute demo video (`docs/DEMO_VIDEO_SCRIPT.md`) and submit
 
-## Vijendra Pratap Singh — AWS
-- [ ] Follow `docs/DEPLOY_AWS.md`: Bedrock access → S3 → SNS → IAM role → EC2 (Corretto) → CloudFront → Amplify → EventBridge
-- [ ] Share the live frontend URL and API URL in the team group
-- [ ] Screenshot each AWS console page used (for video + blog)
-- [ ] Architecture diagram image for the video (README Mermaid → export)
+## Vijendra Pratap Singh — Backend
+- [ ] Run backend locally, test every API in `docs/API.md`
+- [ ] Once AWS keys exist: `AI_ENABLED=true`, test 10 real flood photos, tune the prompt in `AiDepthService`
+- [ ] Fix backend bugs
 
-## Tanya Shukla — frontend polish + Hindi
-- [ ] Test on 2–3 real phones: install as app (Add to Home screen), camera, GPS
-- [ ] Proof-read every Hindi string in `frontend/src/i18n.jsx`
-- [ ] Fix any layout issues on small screens
-- [ ] Make the "report → result" moment look great for the video
+## Tanya Shukla — Web frontend
+- [ ] Check every screen on desktop and phone browser; fix layout issues
+- [ ] Proof-read Hindi in `frontend/src/i18n.jsx`
+- [ ] Polish authority dashboard and complaint PDF for the demo
 
-## Manas Pandey — routes, data, docs
-- [ ] Test Safe Route with real NCR trips (e.g. NIET → Pari Chowk, Sector 62 → Connaught Place) while demo floods are live
-- [ ] Check seeded hotspot coordinates in `SeedService` sit on the right road; fix if off
-- [ ] Download the complaint PDF for each area; check it reads well
-- [ ] Write and publish the AWS Builder Center blog (`docs/BLOG_DRAFT.md`) and add the link to the submission
-- [ ] Everyone: verify student status on AWS Builder Center (required)
+## Manas Pandey — Deploy + PPT
+- [ ] Deploy with `docs/DEPLOY_AWS.md`: EC2 backend, CloudFront (HTTPS), Amplify web, S3, SNS
+- [ ] Share the backend HTTPS URL with the team first (app + web both need it)
+- [ ] PPT: problem → solution → how it works → AWS services → impact → team
+- [ ] If time: AWS Builder Center blog (`docs/BLOG_DRAFT.md`)
 
-## Sync
-- 15-min call at 1 PM and 10 PM. Say: done / doing / blocked.
-- Branches: `feat/<name>-<thing>` → PR → Shivam merges.
+## Everyone
+- [ ] Verify student status on AWS Builder Center (required)

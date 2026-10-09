@@ -42,7 +42,7 @@ AI_ENABLED=true
 BEDROCK_MODEL_ID=apac.amazon.nova-lite-v1:0
 S3_BUCKET=jalmarg-photos-yourname
 SNS_TOPIC_ARN=arn:aws:sns:ap-south-1:123456789012:jalmarg-alerts
-CORS_ORIGINS=https://*.amplifyapp.com,https://*.cloudfront.net,http://localhost:5173
+CORS_ORIGINS=https://*.amplifyapp.com,https://*.cloudfront.net,http://localhost:5173,https://localhost,capacitor://localhost
 ALERT_RUN_KEY=<long-random-string>
 # DB_URL=...  DB_USER=...  DB_PASSWORD=...
 ```

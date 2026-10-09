@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useLang } from '../i18n'
+import ServerSettings from '../components/ServerSettings'
 
 const STEPS = {
   en: [
@@ -74,6 +75,7 @@ export default function AboutPage() {
           ? 'नोट: टेस्टिंग के दौरान मैप पर "डेमो डेटा" वाली रिपोर्ट उदाहरण के लिए हैं।'
           : 'Note: reports tagged "demo data" are illustrative examples at known waterlogging spots, used while testing.'}
       </p>
+      <ServerSettings />
     </div>
   )
 }

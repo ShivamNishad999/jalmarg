@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet'
 import { Link, useNavigate } from 'react-router-dom'
-import { api, compressImage, getPosition, reverseGeocode, NCR_CENTER } from '../api'
+import { api, compressImage, getPosition, reverseGeocode, NCR_CENTER, isNativeApp } from '../api'
 import { useLang } from '../i18n'
 import { ReportCard, severityIcon } from '../components/shared'
 
@@ -91,9 +91,10 @@ export default function ReportPage() {
   }
 
   if (result) {
+    const appLink = import.meta.env.VITE_PUBLIC_URL || (isNativeApp ? '' : location.origin)
     const msg = lang === 'hi'
-      ? `⚠️ जलभराव: ${result.locationName} — लगभग ${result.depthFt.toFixed(1)} फीट पानी। ${result.bikeSafe ? '' : 'बाइक से न जाएँ। '}JalMarg पर लाइव देखें: ${location.origin}`
-      : `⚠️ Waterlogging at ${result.locationName} — about ${result.depthFt.toFixed(1)} ft of water. ${result.bikeSafe ? '' : 'Avoid on two-wheelers. '}Live map: ${location.origin}`
+      ? `⚠️ जलभराव: ${result.locationName} — लगभग ${result.depthFt.toFixed(1)} फीट पानी। ${result.bikeSafe ? '' : 'बाइक से न जाएँ। '}JalMarg पर लाइव देखें: ${appLink}`
+      : `⚠️ Waterlogging at ${result.locationName} — about ${result.depthFt.toFixed(1)} ft of water. ${result.bikeSafe ? '' : 'Avoid on two-wheelers. '}Live map: ${appLink}`
     return (
       <div className="page narrow">
         <div className="success-badge">✓</div>

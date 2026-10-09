@@ -1,6 +1,23 @@
 // All calls to the JalMarg backend (Spring Boot) and to free map services.
 
-export const API_BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '')
+// Backend URL. Order: value saved in the app (About > Server) → build-time VITE_API_BASE → same origin.
+// The saved value lets one Android APK talk to a laptop on Wi-Fi or to the AWS deployment.
+const clean = (u) => (u || '').trim().replace(/\/$/, '')
+function readSaved() {
+  try { return localStorage.getItem('jalmarg-api') } catch { return null }
+}
+export let API_BASE = clean(readSaved() || import.meta.env.VITE_API_BASE)
+
+export function setApiBase(url) {
+  API_BASE = clean(url)
+  try {
+    if (API_BASE) localStorage.setItem('jalmarg-api', API_BASE)
+    else localStorage.removeItem('jalmarg-api')
+  } catch { /* storage blocked */ }
+}
+
+/** True when running inside the installed Android app (Capacitor). */
+export const isNativeApp = typeof window !== 'undefined' && !!window.Capacitor?.isNativePlatform?.()
 
 async function request(path, options = {}) {
   const res = await fetch(API_BASE + path, options)

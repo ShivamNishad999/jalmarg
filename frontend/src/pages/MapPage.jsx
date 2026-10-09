@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet'
 import { Link } from 'react-router-dom'
-import { api, getPosition, NCR_CENTER } from '../api'
+import { api, getPosition, NCR_CENTER, API_BASE, isNativeApp } from '../api'
 import { useLang } from '../i18n'
 import { ReportCard, severityIcon, youIcon, SEV_HEX } from '../components/shared'
 
@@ -79,6 +79,9 @@ export default function MapPage() {
           {severe > 0 && <span className="muted"> · {severe} 🚫🛵</span>}
         </div>
         {error && <div className="banner err">{error}</div>}
+        {isNativeApp && !API_BASE && (
+          <Link to="/about#server" className="banner warn">⚙️ Set the server address first (About → Server)</Link>
+        )}
       </div>
 
       <section className={'sheet' + (sheetOpen ? ' open' : '')}>
