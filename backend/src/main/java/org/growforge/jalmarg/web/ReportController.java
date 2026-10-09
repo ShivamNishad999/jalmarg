@@ -74,15 +74,26 @@ public class ReportController {
         return ReportView.of(reportService.get(id));
     }
 
-    /** "Still flooded" from someone passing by. */
+    /** "Still flooded" from someone passing by. Throttled against rapid repeat spam. */
     @PostMapping("/{id}/confirm")
-    public ReportView confirm(@PathVariable long id) {
-        return ReportView.of(reportService.confirm(id));
+    public ReportView confirm(@PathVariable long id, jakarta.servlet.http.HttpServletRequest req) {
+        String clientIp = resolveClientIp(req);
+        return ReportView.of(reportService.confirm(id, clientIp));
     }
 
-    /** "Water has cleared" from someone passing by. */
+    /** "Water has cleared" from someone passing by. Throttled against rapid repeat spam. */
     @PostMapping("/{id}/clear")
-    public ReportView clear(@PathVariable long id) {
-        return ReportView.of(reportService.clear(id));
+    public ReportView clear(@PathVariable long id, jakarta.servlet.http.HttpServletRequest req) {
+        String clientIp = resolveClientIp(req);
+        return ReportView.of(reportService.clear(id, clientIp));
+    }
+
+    private static String resolveClientIp(jakarta.servlet.http.HttpServletRequest req) {
+        if (req == null) return "unknown";
+        String forwarded = req.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            return forwarded.split(",")[0].trim();
+        }
+        return req.getRemoteAddr() != null ? req.getRemoteAddr() : "unknown";
     }
 }

@@ -24,6 +24,8 @@ public class ApiController {
     private final AiDepthService ai;
     private final ReportService reportService;
     private final SeedService seedService;
+    private final FloodRiskAssessmentService riskService;
+    private final AutonomousFloodMonitorService monitorService;
     private final String runKey;
     private final String aiModel;
 
@@ -31,6 +33,8 @@ public class ApiController {
                          DashboardService dashboardService, PdfReportService pdfReportService,
                          StorageService storage, WeatherService weather, AiDepthService ai,
                          ReportService reportService, SeedService seedService,
+                         FloodRiskAssessmentService riskService,
+                         AutonomousFloodMonitorService monitorService,
                          @Value("${jalmarg.alerts.run-key}") String runKey,
                          @Value("${jalmarg.ai.model-id}") String aiModel) {
         this.routeService = routeService;
@@ -43,8 +47,38 @@ public class ApiController {
         this.ai = ai;
         this.reportService = reportService;
         this.seedService = seedService;
+        this.riskService = riskService;
+        this.monitorService = monitorService;
         this.runKey = runKey;
         this.aiModel = aiModel;
+    }
+
+    // ------------------------------------------------------------- autonomous flood risk
+
+    @GetMapping("/flood-risk")
+    public FloodRiskView getFloodRisk(@RequestParam double lat, @RequestParam double lng,
+                                      @RequestParam(required = false) String area,
+                                      @RequestParam(required = false) Long hotspotId) {
+        return FloodRiskView.of(riskService.assess(lat, lng, area, hotspotId, null));
+    }
+
+    @GetMapping("/flood-risk/hotspots")
+    public List<FloodRiskView> getHotspotsRisk() {
+        return riskService.getAllActive().stream().map(FloodRiskView::of).toList();
+    }
+
+    @GetMapping("/flood-risk/status")
+    public FloodRiskStatusView getMonitorStatus() {
+        return monitorService.getStatus();
+    }
+
+    @PostMapping("/flood-risk/run")
+    public ResponseEntity<Map<String, Object>> runMonitorCycle(@RequestHeader(value = "X-Jalmarg-Key", required = false) String key) {
+        if (key == null || !key.equals(runKey)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "bad key"));
+        }
+        var results = monitorService.runEvaluationCycle();
+        return ResponseEntity.ok(Map.of("evaluated", results.size(), "status", "success"));
     }
 
     // ------------------------------------------------------------- meta

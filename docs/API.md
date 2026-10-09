@@ -1,6 +1,6 @@
 # JalMarg API
 
-Base URL: `http://localhost:8091` locally, App Runner / EC2 URL in production. All JSON. Errors: `{"error": "message"}`.
+Base URL: `http://localhost:8080` locally, App Runner / EC2 URL in production. All JSON. Errors: `{"error": "message"}`.
 
 ## Reports
 
@@ -57,6 +57,16 @@ The frontend gets route geometry from OSRM, sends it here, and re-ranks for the 
 - `GET /api/alerts/subscriptions?email=` · `DELETE /api/alerts/subscriptions/{id}?email=`
 - `POST /api/alerts/run` header `X-Jalmarg-Key` → `{sent: n}` (EventBridge Scheduler)
 - `GET /api/weather?lat=&lng=` → `{next6hMm, maxHourlyMm, level}`
+
+## Autonomous Flood Risk & Environmental Intelligence
+- `GET /api/flood-risk?lat=&lng=&area=&hotspotId=` → `FloodRiskView` `{id, hotspotId, hotspotName, area, latitude, longitude, riskLevel, riskScore, status, rainfallNext6hMm, maxHourlyMm, rainLevel, activeReportCount, maxObservedDepthFt, historicalProneness, confidence, dataQuality, summaryEn, summaryHi, factorBreakdown, assessedAt, expiresAt}`
+  - `status`: `OBSERVED_FLOODING` (confirmed by citizen/authority reports) vs `PREDICTED_RISK` (inferred from precipitation forecast + hotspot proneness) vs `NO_IMMEDIATE_RISK` vs `UNKNOWN`
+  - `riskLevel`: `LOW` (0-25) · `MODERATE` (26-50) · `HIGH` (51-75) · `CRITICAL` (76-100) · `UNKNOWN`
+  - `dataQuality`: `FRESH` · `STALE` · `MISSING_TELEMETRY` · `SYNTHETIC`
+  - `factorBreakdown`: JSON object detailing contributing data streams (`OPEN_METEO` ECMWF forecast, `NASA_GES_DISC` GPM IMERG V07B satellite observation, `COPERNICUS_ESA` GLO-30 elevation & depression index, and `CITIZEN_CROWDSOURCE` ground truth).
+- `GET /api/flood-risk/hotspots` → `FloodRiskView[]` (active assessments across all recurring hotspots)
+- `GET /api/flood-risk/status` → `{isRunning, totalCycles, lastRunAt, lastDurationMs, evaluatedHotspotsCount, criticalRiskCount, highRiskCount, alertsGeneratedCount, activeAssessmentTtl}`
+- `POST /api/flood-risk/run` header `X-Jalmarg-Key` → `{evaluated: n, status: "success"}`
 
 ## Authority
 - `GET /api/hotspots` → Hotspot[] `{id,name,area,latitude,longitude,totalReports,reportsLast30Days,maxDepthFt,activeNow,firstSeen,lastSeen}`

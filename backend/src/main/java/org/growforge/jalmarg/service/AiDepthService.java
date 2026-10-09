@@ -89,29 +89,79 @@ public class AiDepthService {
                             .build())
                     .build());
 
-            String text = response.output().message().content().get(0).text();
+            if (response == null || response.output() == null || response.output().message() == null) {
+                log.warn("Bedrock returned empty response structure");
+                return null;
+            }
+
+            var contentList = response.output().message().content();
+            if (contentList == null || contentList.isEmpty()) {
+                log.warn("Bedrock returned empty content list");
+                return null;
+            }
+
+            String text = contentList.stream()
+                    .filter(c -> c.text() != null && !c.text().isBlank())
+                    .map(ContentBlock::text)
+                    .findFirst()
+                    .orElse(null);
+
             return parse(text);
+        } catch (ThrottlingException e) {
+            log.warn("Bedrock depth estimation throttled (rate limit): {}", e.getMessage());
+            return null;
+        } catch (AccessDeniedException e) {
+            log.warn("Bedrock access denied (check IAM permissions/model access): {}", e.getMessage());
+            return null;
+        } catch (ModelTimeoutException e) {
+            log.warn("Bedrock model timeout: {}", e.getMessage());
+            return null;
+        } catch (ValidationException e) {
+            log.warn("Bedrock request validation failed (check model ID / image format): {}", e.getMessage());
+            return null;
+        } catch (ResourceNotFoundException e) {
+            log.warn("Bedrock resource/model not found: {}", e.getMessage());
+            return null;
+        } catch (BedrockRuntimeException e) {
+            log.warn("Bedrock runtime error: {}", e.getMessage());
+            return null;
         } catch (Exception e) {
             log.warn("Bedrock depth estimation failed: {}", e.getMessage());
             return null;
         }
     }
 
-    /** Pulls the JSON object out of the model text (models sometimes add ``` fences). */
-    AiResult parse(String text) throws Exception {
-        if (text == null) return null;
-        int start = text.indexOf('{');
-        int end = text.lastIndexOf('}');
-        if (start < 0 || end <= start) return null;
-        JsonNode n = mapper.readTree(text.substring(start, end + 1));
-        double depth = Math.max(0, Math.min(8, n.path("depth_ft").asDouble(0)));
-        double conf = Math.max(0, Math.min(1, n.path("confidence").asDouble(0.5)));
-        return new AiResult(
-                n.path("water_visible").asBoolean(depth > 0),
-                Math.round(depth * 10) / 10.0,
-                conf,
-                n.path("reference").asText(""),
-                n.path("summary_en").asText(""),
-                n.path("summary_hi").asText(""));
+    /** Pulls the JSON object out of the model text (models sometimes add ``` fences or chat text). */
+    public AiResult parse(String text) {
+        if (text == null || text.isBlank()) return null;
+        try {
+            int start = text.indexOf('{');
+            int end = text.lastIndexOf('}');
+            if (start < 0 || end <= start) return null;
+
+            JsonNode n = mapper.readTree(text.substring(start, end + 1));
+            if (!n.isObject()) return null;
+
+            double depth = Math.max(0, Math.min(8.0, n.path("depth_ft").asDouble(0)));
+            double conf = Math.max(0, Math.min(1.0, n.path("confidence").asDouble(0.5)));
+            boolean waterVisible = n.has("water_visible")
+                    ? n.path("water_visible").asBoolean(depth > 0)
+                    : depth > 0;
+
+            String ref = n.path("reference").asText("").trim();
+            String summaryEn = n.path("summary_en").asText("").trim();
+            String summaryHi = n.path("summary_hi").asText("").trim();
+
+            return new AiResult(
+                    waterVisible,
+                    Math.round(depth * 10) / 10.0,
+                    conf,
+                    ref,
+                    summaryEn,
+                    summaryHi);
+        } catch (Exception e) {
+            log.warn("Failed to parse Bedrock response text: {}", e.getMessage());
+            return null;
+        }
     }
 }

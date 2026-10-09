@@ -40,17 +40,20 @@ public class AlertService {
     private final ReportService reportService;
     private final WeatherService weather;
     private final SnsClient sns;
+    private final org.growforge.jalmarg.repo.FloodRiskAssessmentRepository riskRepo;
     private final String topicArn;
     private final boolean internalScheduler;
 
     public AlertService(SubscriptionRepository subs, ReportService reportService, WeatherService weather,
                         SnsClient sns,
+                        org.growforge.jalmarg.repo.FloodRiskAssessmentRepository riskRepo,
                         @Value("${jalmarg.alerts.sns-topic-arn}") String topicArn,
                         @Value("${jalmarg.alerts.internal-scheduler}") boolean internalScheduler) {
         this.subs = subs;
         this.reportService = reportService;
         this.weather = weather;
         this.sns = sns;
+        this.riskRepo = riskRepo;
         this.topicArn = topicArn == null ? "" : topicArn.trim();
         this.internalScheduler = internalScheduler;
         log.info("Alerts via SNS: {}", snsEnabled() ? this.topicArn : "disabled (log only)");
@@ -122,6 +125,7 @@ public class AlertService {
         boolean hi = "hi".equalsIgnoreCase(lang);
         WeatherService.RainForecast rain = weather.forecast(lat, lng);
         List<AlertItem> items = new ArrayList<>();
+        java.util.Set<Long> observedHotspotIds = new java.util.HashSet<>();
 
         if ("HEAVY".equals(rain.level()) || "VERY_HEAVY".equals(rain.level())) {
             items.add(new AlertItem(rain.level(),
@@ -131,13 +135,36 @@ public class AlertService {
                     null, lat, lng));
         }
 
+        // 1. Add active observed flood reports
         for (Report r : reportService.activeNear(lat, lng, radiusKm)) {
             if (r.getSeverity() == Severity.LOW) continue;
+            if (r.getHotspot() != null) {
+                observedHotspotIds.add(r.getHotspot().getId());
+            }
             double km = Geo.distanceM(lat, lng, r.getLatitude(), r.getLongitude()) / 1000.0;
             items.add(new AlertItem(r.getSeverity().name(),
                     (hi ? "जलभराव: " : "Waterlogging: ") + r.getLocationName(),
                     describe(r, km, hi), r.getId(), r.getLatitude(), r.getLongitude()));
         }
+
+        // 2. Add high/critical autonomous predicted risk warnings (without duplicating observed spots)
+        List<org.growforge.jalmarg.model.FloodRiskAssessment> activeRisks =
+                riskRepo.findByExpiresAtAfterOrderByRiskScoreDesc(Instant.now());
+        for (org.growforge.jalmarg.model.FloodRiskAssessment risk : activeRisks) {
+            if (risk.getStatus() != org.growforge.jalmarg.model.Enums.RiskStatus.PREDICTED_RISK) continue;
+            if (risk.getRiskLevel() != org.growforge.jalmarg.model.Enums.RiskLevel.HIGH
+                    && risk.getRiskLevel() != org.growforge.jalmarg.model.Enums.RiskLevel.CRITICAL) continue;
+            if (risk.getHotspotId() != null && observedHotspotIds.contains(risk.getHotspotId())) continue;
+
+            double km = Geo.distanceM(lat, lng, risk.getLatitude(), risk.getLongitude()) / 1000.0;
+            if (km <= radiusKm) {
+                String title = hi ? "पूर्वानुमान चेतावनी: " + risk.getHotspotName()
+                        : "Forecast Risk Warning: " + risk.getHotspotName();
+                String msg = hi ? risk.getSummaryHi() : risk.getSummaryEn();
+                items.add(new AlertItem(risk.getRiskLevel().name(), title, msg, null, risk.getLatitude(), risk.getLongitude()));
+            }
+        }
+
         return new AlertFeed(rain.next6hMm(), rain.maxHourlyMm(), rain.level(), items);
     }
 

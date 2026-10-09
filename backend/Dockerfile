@@ -10,6 +10,6 @@ RUN mvn -q -B -DskipTests package
 FROM amazoncorretto:21-alpine
 WORKDIR /app
 COPY --from=build /app/target/jalmarg.jar app.jar
-ENV PORT=8091
-EXPOSE 8091
+ENV PORT=8080
+EXPOSE 8080
 ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-jar", "app.jar"]

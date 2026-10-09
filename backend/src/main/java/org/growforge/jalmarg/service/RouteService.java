@@ -18,34 +18,89 @@ import java.util.List;
 public class RouteService {
 
     private final ReportService reportService;
+    private final org.growforge.jalmarg.repo.FloodRiskAssessmentRepository riskRepo;
 
-    public RouteService(ReportService reportService) {
+    public RouteService(ReportService reportService, org.growforge.jalmarg.repo.FloodRiskAssessmentRepository riskRepo) {
         this.reportService = reportService;
+        this.riskRepo = riskRepo;
     }
 
     public RouteEvaluateResponse evaluate(RouteEvaluateRequest req) {
         double buffer = req.bufferMeters() == null ? 60 : Math.max(20, Math.min(300, req.bufferMeters()));
         List<Report> active = reportService.active();
-        List<RouteResult> results = new ArrayList<>();
+        List<org.growforge.jalmarg.model.FloodRiskAssessment> activeRisks =
+                riskRepo.findByExpiresAtAfterOrderByRiskScoreDesc(java.time.Instant.now());
 
+        List<RouteResult> results = new ArrayList<>();
         List<List<double[]>> routes = req.routes() == null ? List.of() : req.routes();
+
         for (int i = 0; i < routes.size(); i++) {
             List<double[]> pts = routes.get(i);
             List<RouteHazard> hazards = new ArrayList<>();
+            double routeRiskScore = 0.0;
+            double maxDepth = 0.0;
+            java.util.Set<Long> observedHotspots = new java.util.HashSet<>();
+
+            // 1. Evaluate Observed Ground Hazards (Active Reports)
             for (Report r : active) {
-                if (r.getSeverity() == Severity.LOW) continue; // puddles don't block routes
+                if (r.getSeverity() == Severity.LOW) continue; // Shallow puddles don't block routes
                 double d = distanceToPolyline(r.getLatitude(), r.getLongitude(), pts);
                 if (d <= buffer) {
-                    hazards.add(new RouteHazard(r.getId(), r.getLocationName(), r.getLatitude(),
-                            r.getLongitude(), r.getDepthFt(), r.getSeverity().name(), Math.round(d)));
+                    if (r.getHotspot() != null) {
+                        observedHotspots.add(r.getHotspot().getId());
+                    }
+                    hazards.add(new RouteHazard(
+                            r.getId(),
+                            r.getLocationName(),
+                            r.getLatitude(),
+                            r.getLongitude(),
+                            r.getDepthFt(),
+                            r.getSeverity().name(),
+                            Math.round(d),
+                            "OBSERVED"));
+
+                    double baseWeight = SafetyRules.riskWeight(r.getSeverity());
+                    double confirmMultiplier = 1.0 + Math.min(r.getConfirmations(), 5) * 0.1;
+                    routeRiskScore += baseWeight * confirmMultiplier;
+                    maxDepth = Math.max(maxDepth, r.getDepthFt());
                 }
             }
-            hazards.sort(Comparator.comparingDouble(RouteHazard::depthFt).reversed());
-            double score = hazards.stream()
-                    .mapToDouble(h -> SafetyRules.riskWeight(Severity.valueOf(h.severity()))).sum();
-            double maxDepth = hazards.stream().mapToDouble(RouteHazard::depthFt).max().orElse(0);
-            results.add(new RouteResult(i, hazards.size(), score,
-                    maxDepth < SafetyRules.BIKE_LIMIT_FT, maxDepth < SafetyRules.CAR_LIMIT_FT, hazards));
+
+            // 2. Evaluate Autonomous Predicted Risks along Route (without double-counting observed spots)
+            for (org.growforge.jalmarg.model.FloodRiskAssessment ra : activeRisks) {
+                if (ra.getStatus() != org.growforge.jalmarg.model.Enums.RiskStatus.PREDICTED_RISK) continue;
+                if (ra.getRiskLevel() != org.growforge.jalmarg.model.Enums.RiskLevel.HIGH
+                        && ra.getRiskLevel() != org.growforge.jalmarg.model.Enums.RiskLevel.CRITICAL) continue;
+                if (ra.getHotspotId() != null && observedHotspots.contains(ra.getHotspotId())) continue;
+
+                double d = distanceToPolyline(ra.getLatitude(), ra.getLongitude(), pts);
+                if (d <= buffer) {
+                    String sev = ra.getRiskLevel() == org.growforge.jalmarg.model.Enums.RiskLevel.CRITICAL ? "HIGH" : "MODERATE";
+                    hazards.add(new RouteHazard(
+                            null,
+                            "[Forecast Risk] " + ra.getHotspotName(),
+                            ra.getLatitude(),
+                            ra.getLongitude(),
+                            0.0,
+                            sev,
+                            Math.round(d),
+                            "PREDICTED"));
+
+                    // Predicted risk adds calibrated hazard weight
+                    routeRiskScore += (ra.getRiskLevel() == org.growforge.jalmarg.model.Enums.RiskLevel.CRITICAL ? 4.0 : 2.0);
+                }
+            }
+
+            hazards.sort(Comparator.comparingDouble(RouteHazard::depthFt).reversed()
+                    .thenComparing(RouteHazard::distanceFromRouteM));
+
+            results.add(new RouteResult(
+                    i,
+                    hazards.size(),
+                    Math.round(routeRiskScore * 10.0) / 10.0,
+                    maxDepth < SafetyRules.BIKE_LIMIT_FT,
+                    maxDepth < SafetyRules.CAR_LIMIT_FT,
+                    hazards));
         }
 
         // Lowest risk wins; on a tie the router's own order (fastest first) wins.
@@ -53,6 +108,7 @@ public class RouteService {
                 .min(Comparator.comparingDouble(RouteResult::riskScore).thenComparingInt(RouteResult::index))
                 .map(RouteResult::index)
                 .orElse(-1);
+
         return new RouteEvaluateResponse(best, results);
     }
 

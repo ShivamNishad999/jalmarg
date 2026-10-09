@@ -29,19 +29,33 @@ public class ReportService {
     private final StorageService storage;
     private final AiDepthService ai;
     private final int ttlHours;
+    private final boolean demoIsolatedMode;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public ReportService(ReportRepository reports, HotspotService hotspotService,
                          StorageService storage, AiDepthService ai,
-                         @Value("${jalmarg.reports.ttl-hours}") int ttlHours) {
+                         @Value("${jalmarg.reports.ttl-hours}") int ttlHours,
+                         @Value("${jalmarg.demo.isolated-mode:false}") boolean demoIsolatedMode) {
         this.reports = reports;
         this.hotspotService = hotspotService;
         this.storage = storage;
         this.ai = ai;
         this.ttlHours = ttlHours;
+        this.demoIsolatedMode = demoIsolatedMode;
+    }
+
+    public ReportService(ReportRepository reports, HotspotService hotspotService,
+                         StorageService storage, AiDepthService ai,
+                         int ttlHours) {
+        this(reports, hotspotService, storage, ai, ttlHours, false);
     }
 
     public int getTtlHours() {
         return ttlHours;
+    }
+
+    public boolean isDemoIsolatedMode() {
+        return demoIsolatedMode;
     }
 
     /** Input for a new report (photo optional, depth level optional, but at least one needed). */
@@ -59,6 +73,29 @@ public class ReportService {
         }
 
         Instant now = Instant.now();
+
+        // Duplicate report detection: within 50m and 20 mins of an existing active report
+        List<Report> existingNearby = activeNear(in.latitude(), in.longitude(), 0.05); // 50 meters
+        Report duplicateCandidate = existingNearby.stream()
+                .filter(ex -> ex.getLastConfirmedAt().isAfter(now.minus(Duration.ofMinutes(20))))
+                .findFirst()
+                .orElse(null);
+
+        if (duplicateCandidate != null) {
+            duplicateCandidate.setConfirmations(duplicateCandidate.getConfirmations() + 1);
+            duplicateCandidate.setLastConfirmedAt(now);
+            if (in.photo() != null && in.photo().length > 0 && duplicateCandidate.getPhotoKey() == null) {
+                duplicateCandidate.setPhotoKey(storage.save(in.photo(), in.photoContentType()));
+            }
+            if (in.depthLevel() != null && in.depthLevel().feet > duplicateCandidate.getDepthFt()) {
+                duplicateCandidate.setDepthFt(in.depthLevel().feet);
+                duplicateCandidate.setCitizenDepthLevel(in.depthLevel());
+                SafetyRules.apply(duplicateCandidate);
+            }
+            log.info("Merged duplicate report near {} into report #{}", duplicateCandidate.getLocationName(), duplicateCandidate.getId());
+            return reports.save(duplicateCandidate);
+        }
+
         Report r = new Report();
         r.setLatitude(in.latitude());
         r.setLongitude(in.longitude());
@@ -90,13 +127,15 @@ public class ReportService {
     }
 
     /**
+    /**
      * Rules:
      * - AI only            -> AI depth
      * - citizen only       -> citizen depth
      * - both, AI confident -> weighted mix (AI 60%, citizen 40%)
      * - both, AI unsure or says "no water" -> trust the citizen, keep AI note
+     * - photo only, AI off or uncertain   -> 0.0 ft unmeasured visual report (never fabricate 0.3 ft)
      */
-    static void fuseDepth(Report r, DepthLevel level, AiDepthService.AiResult aiResult) {
+    public static void fuseDepth(Report r, DepthLevel level, AiDepthService.AiResult aiResult) {
         boolean hasAi = aiResult != null && aiResult.waterVisible();
         if (aiResult != null) {
             r.setAiConfidence(aiResult.confidence());
@@ -117,20 +156,44 @@ public class ReportService {
             r.setDepthFt(level.feet);
             r.setDepthSource(DepthSource.CITIZEN);
         } else {
-            // photo only, AI off or saw no water: record as shallow, unverified
-            r.setDepthFt(aiResult != null ? aiResult.depthFt() : 0.3);
+            // Photo only, AI off or saw no water: record as 0.0 unmeasured visual report
+            // Does NOT misrepresent an unknown depth as a measured 0.3 ft value
+            double depth = (aiResult != null && aiResult.depthFt() > 0) ? aiResult.depthFt() : 0.0;
+            r.setDepthFt(depth);
             r.setDepthSource(aiResult != null ? DepthSource.AI : DepthSource.CITIZEN);
+            if (r.getAiSummary() == null || r.getAiSummary().isBlank()) {
+                r.setAiSummary("Visual observation: depth unmeasured (photo uploaded without depth selection).");
+            }
+            if (r.getAiSummaryHi() == null || r.getAiSummaryHi().isBlank()) {
+                r.setAiSummaryHi("दृश्य अवलोकन: गहराई अनमापी (गहराई चयन के बिना फोटो अपलोड)।");
+            }
         }
     }
 
+    private final java.util.Map<String, Instant> actionRateLimit = new java.util.concurrent.ConcurrentHashMap<>();
+
     @Transactional(readOnly = true)
     public List<Report> active() {
-        return reports.findByStatusOrderByCreatedAtDesc(ReportStatus.ACTIVE);
+        return active(false);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Report> active(boolean forceIncludeDemo) {
+        var list = reports.findByStatusOrderByCreatedAtDesc(ReportStatus.ACTIVE);
+        if (demoIsolatedMode && !forceIncludeDemo) {
+            return list.stream().filter(r -> r.getDepthSource() != DepthSource.DEMO).toList();
+        }
+        return list;
     }
 
     @Transactional(readOnly = true)
     public List<Report> activeNear(double lat, double lng, double radiusKm) {
-        return active().stream()
+        return activeNear(lat, lng, radiusKm, false);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Report> activeNear(double lat, double lng, double radiusKm, boolean forceIncludeDemo) {
+        return active(forceIncludeDemo).stream()
                 .filter(r -> Geo.distanceM(lat, lng, r.getLatitude(), r.getLongitude()) <= radiusKm * 1000)
                 .sorted(Comparator.comparingDouble(r -> Geo.distanceM(lat, lng, r.getLatitude(), r.getLongitude())))
                 .toList();
@@ -146,12 +209,21 @@ public class ReportService {
         return reports.findById(id).orElseThrow(() -> new IllegalArgumentException("Report not found"));
     }
 
-    /** Someone passing by says "still flooded". Keeps the report alive. */
+    /** Someone passing by says "still flooded". Throttles repeat clicks from the same client. */
     @Transactional
-    public Report confirm(long id) {
+    public Report confirm(long id, String clientKey) {
+        String key = "confirm:" + id + ":" + (clientKey != null ? clientKey : "anon");
+        Instant now = Instant.now();
+        Instant last = actionRateLimit.get(key);
+        if (last != null && last.isAfter(now.minus(Duration.ofSeconds(15)))) {
+            log.warn("Rate-limited confirmation on report #{} from {}", id, clientKey);
+            return get(id); // Return existing report without duplicate confirmation
+        }
+        actionRateLimit.put(key, now);
+
         Report r = get(id);
         r.setConfirmations(r.getConfirmations() + 1);
-        r.setLastConfirmedAt(Instant.now());
+        r.setLastConfirmedAt(now);
         if (r.getStatus() != ReportStatus.ACTIVE) {
             r.setStatus(ReportStatus.ACTIVE);
             r.setClearedAt(null);
@@ -159,13 +231,30 @@ public class ReportService {
         return reports.save(r);
     }
 
-    /** Someone passing by says "water has cleared". */
+    public Report confirm(long id) {
+        return confirm(id, "local");
+    }
+
+    /** Someone passing by says "water has cleared". Throttles repeat clicks. */
     @Transactional
-    public Report clear(long id) {
+    public Report clear(long id, String clientKey) {
+        String key = "clear:" + id + ":" + (clientKey != null ? clientKey : "anon");
+        Instant now = Instant.now();
+        Instant last = actionRateLimit.get(key);
+        if (last != null && last.isAfter(now.minus(Duration.ofSeconds(15)))) {
+            log.warn("Rate-limited clearance on report #{} from {}", id, clientKey);
+            return get(id);
+        }
+        actionRateLimit.put(key, now);
+
         Report r = get(id);
         r.setStatus(ReportStatus.CLEARED);
-        r.setClearedAt(Instant.now());
+        r.setClearedAt(now);
         return reports.save(r);
+    }
+
+    public Report clear(long id) {
+        return clear(id, "local");
     }
 
     /** Every 10 minutes: reports nobody confirmed for TTL hours drop off the live map. */
