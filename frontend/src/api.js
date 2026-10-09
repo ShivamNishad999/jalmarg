@@ -2,7 +2,12 @@
 
 // Backend URL. Order: value saved in the app (About > Server) → build-time VITE_API_BASE → same origin.
 // The saved value lets one Android APK talk to a laptop on Wi-Fi or to the AWS deployment.
-const clean = (u) => (u || '').trim().replace(/\/$/, '')
+const clean = (u) => {
+  let v = (u || '').trim().replace(/\/+$/, '')
+  // "192.168.1.5:8091" typed without a scheme → http://192.168.1.5:8091
+  if (v && !/^https?:\/\//i.test(v)) v = 'http://' + v
+  return v
+}
 function readSaved() {
   try { return localStorage.getItem('jalmarg-api') } catch { return null }
 }
@@ -25,11 +30,19 @@ import { isNative, nativePosition } from './native'
 export const TILE_URL = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
 export const TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
 
+export class ServerNotSetError extends Error {
+  constructor() { super('Server address is not set (About → Server)') }
+}
+
 async function request(path, options = {}) {
+  // Inside the Android app there is no backend on the same origin: a server address is required.
+  if (isNative && !API_BASE) throw new ServerNotSetError()
   const res = await fetch(API_BASE + path, options)
   const isJson = (res.headers.get('content-type') || '').includes('application/json')
   const body = isJson ? await res.json() : null
   if (!res.ok) throw new Error((body && body.error) || `Request failed (${res.status})`)
+  // A non-JSON answer means the address does not point at the JalMarg backend
+  if (!isJson) throw new Error('This address is not the JalMarg server. Check About → Server.')
   return body
 }
 

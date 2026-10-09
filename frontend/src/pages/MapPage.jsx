@@ -22,7 +22,7 @@ export default function MapPage() {
   const [sheetOpen, setSheetOpen] = useState(true)
 
   const load = () =>
-    api.activeReports().then(setReports).catch((e) => setError(e.message))
+    api.activeReports().then((r) => { setReports(Array.isArray(r) ? r : []); setError('') }).catch((e) => setError(e.message))
 
   useEffect(() => {
     load()
@@ -33,7 +33,7 @@ export default function MapPage() {
 
   useEffect(() => {
     if (!me) return
-    api.feed(me.lat, me.lng, lang).then(setFeed).catch(() => {})
+    api.feed(me.lat, me.lng, lang).then((f) => setFeed(f && Array.isArray(f.alerts) ? f : null)).catch(() => {})
   }, [me, lang, reports.length])
 
   const replace = (u) => setReports((rs) => rs.map((r) => (r.id === u.id ? u : r)).filter((r) => r.status === 'ACTIVE'))
@@ -75,7 +75,7 @@ export default function MapPage() {
           <b>{reports.length}</b> {t('liveNow')}
           {severe > 0 && <span className="muted"> · {severe} 🚫🛵</span>}
         </div>
-        {error && <div className="banner err">{error}</div>}
+        {error && <Link to="/server" className="banner err">{error}</Link>}
         {isNativeApp && !API_BASE && (
           <Link to="/server" className="banner warn">{t('setServer')}</Link>
         )}

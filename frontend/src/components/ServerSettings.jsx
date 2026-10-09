@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { API_BASE, api, setApiBase } from '../api'
 import { useLang } from '../i18n'
 
@@ -7,6 +8,7 @@ export default function ServerSettings() {
   const { lang } = useLang()
   const [url, setUrl] = useState(API_BASE)
   const [status, setStatus] = useState('')
+  const navigate = useNavigate()
 
   const save = async () => {
     setApiBase(url)
@@ -14,8 +16,14 @@ export default function ServerSettings() {
     try {
       const m = await api.meta()
       setStatus((lang === 'hi' ? '✓ जुड़ गया' : '✓ Connected') + (m.aiEnabled ? ' · AI on' : ''))
+      setTimeout(() => navigate('/'), 800)
     } catch (e) {
-      setStatus('✗ ' + e.message)
+      const unreachable = e.message === 'Failed to fetch' || e.name === 'TypeError'
+      setStatus('✗ ' + (unreachable
+        ? (lang === 'hi'
+          ? 'सर्वर तक नहीं पहुँचे। जाँचें: लैपटॉप पर backend चल रहा है, फ़ोन और लैपटॉप एक ही Wi-Fi पर हैं, Windows Firewall में port 8091 allow है, और पता http://IP:8091 जैसा है।'
+          : 'Could not reach the server. Check: backend is running on the laptop, phone and laptop are on the same Wi-Fi, Windows Firewall allows port 8091, and the address looks like http://IP:8091.')
+        : e.message))
     }
   }
 

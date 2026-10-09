@@ -8,7 +8,8 @@ import AlertsPage from './pages/AlertsPage'
 import AuthorityPage from './pages/AuthorityPage'
 import AboutPage from './pages/AboutPage'
 import ServerSettings from './components/ServerSettings'
-import { initNative, watchNetwork } from './native'
+import { initNative, watchNetwork, isNative } from './native'
+import { API_BASE } from './api'
 
 const NAV = [
   { to: '/', key: 'nav_map', icon: '🗺️', end: true },
@@ -29,6 +30,10 @@ export default function App() {
   // Android: status bar, splash, back button. Browser: nothing.
   useEffect(() => initNative(navigate, () => pathRef.current), [navigate])
   useEffect(() => watchNetwork(setOnline), [])
+  // First launch of the Android app: ask for the server address before anything else
+  useEffect(() => {
+    if (isNative && !API_BASE && location.pathname !== '/server') navigate('/server', { replace: true })
+  }, []) // eslint-disable-line
 
   return (
     <div className="app">
