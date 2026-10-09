@@ -7,6 +7,8 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // registered by hand in main.jsx, and only in the browser (never inside the Android app)
+      injectRegister: false,
       includeAssets: ['icon.svg'],
       manifest: {
         name: 'JalMarg – Waterlogging alerts & safe routes',
@@ -40,6 +42,8 @@ export default defineConfig({
       }
     })
   ],
+  // older Android WebViews: compile modern syntax down
+  build: { target: ['es2018', 'chrome64'] },
   server: {
     port: 5173,
     proxy: { '/api': 'http://localhost:8091' }

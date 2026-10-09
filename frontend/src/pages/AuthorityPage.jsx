@@ -64,7 +64,7 @@ export default function AuthorityPage() {
             <section className="card">
               <h3>{t('perDay')}</h3>
               <Bars data={s.perDay} />
-              <div className="row between small muted"><span>{fmt(s.perDay[0]?.date)}</span><span>{fmt(s.perDay.at(-1)?.date)}</span></div>
+              <div className="row between small muted"><span>{fmt(s.perDay[0]?.date)}</span><span>{fmt(s.perDay[s.perDay.length - 1]?.date)}</span></div>
             </section>
             <section className="card">
               <h3>{t('bySeverity')}</h3>

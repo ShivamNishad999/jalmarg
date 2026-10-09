@@ -9,11 +9,34 @@
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet" />
+    <!-- fonts load without blocking the first paint (a slow network must never leave the app blank) -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
     <title>JalMarg · Safe routes through the monsoon</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="boot" style="font-family:sans-serif;padding:32px 24px;color:#12222e;text-align:center">
+        <p style="font-size:18px;font-weight:700;margin:40px 0 8px">JalMarg</p>
+        <p style="color:#5d6b75">Loading…</p>
+      </div>
+    </div>
+    <script>
+      // If the app fails to start, show why instead of a blank screen.
+      (function () {
+        var errs = [];
+        function show() {
+          var b = document.getElementById('boot');
+          if (!b || window.__jalmargStarted) return;
+          b.innerHTML = '<p style="font-size:18px;font-weight:700;margin:24px 0 8px">JalMarg could not start</p>' +
+            '<p style="color:#5d6b75;font-size:14px">Send a screenshot of this screen to the team.</p>' +
+            '<pre style="text-align:left;white-space:pre-wrap;background:#f1f1f1;padding:12px;border-radius:8px;font-size:12px">' +
+            (errs.join('\n') || 'No error captured (script did not run)') + '\n\nUA: ' + navigator.userAgent + '</pre>';
+        }
+        window.addEventListener('error', function (e) { errs.push((e.message || 'error') + ' @ ' + (e.filename || '') + ':' + (e.lineno || '')); show(); });
+        window.addEventListener('unhandledrejection', function (e) { errs.push('Promise: ' + (e.reason && (e.reason.message || e.reason))); });
+        setTimeout(show, 8000);
+      })();
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

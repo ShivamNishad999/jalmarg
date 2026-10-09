@@ -5,13 +5,28 @@ import 'leaflet/dist/leaflet.css'
 import './styles.css'
 import App from './App'
 import { LangProvider } from './i18n'
+import ErrorBoundary from './components/ErrorBoundary'
+
+const inApp = !!window.Capacitor?.isNativePlatform?.()
+
+if ('serviceWorker' in navigator) {
+  if (inApp) {
+    // The Android app ships its files inside the APK; a service worker there can serve a blank page.
+    navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister())).catch(() => {})
+  } else {
+    import('virtual:pwa-register').then(({ registerSW }) => registerSW({ immediate: true })).catch(() => {})
+  }
+}
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <LangProvider>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
-    </LangProvider>
+    <ErrorBoundary>
+      <LangProvider>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </LangProvider>
+    </ErrorBoundary>
   </React.StrictMode>
 )
+window.__jalmargStarted = true
