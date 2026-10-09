@@ -143,6 +143,11 @@ export const api = {
   unsubscribe: (id) => request(`/api/alerts/subscriptions/${id}`, { method: 'DELETE' }),
   evaluateRoutes: (routes) => request('/api/routes/evaluate', { method: 'POST', json: { routes, bufferMeters: 60 } }),
   hotspots: () => request('/api/hotspots'),
+  // autonomous flood-risk forecast (Open-Meteo rain + Copernicus DEM terrain + history)
+  floodRisk: (lat, lng) => request(`/api/flood-risk?lat=${lat}&lng=${lng}`, { timeout: 20000 }),
+  floodRiskHotspots: () => request('/api/flood-risk/hotspots'),
+  floodRiskStatus: () => request('/api/flood-risk/status'),
+  weather: (lat, lng) => request(`/api/weather?lat=${lat}&lng=${lng}`),
   summary: (area, days = 30) =>
     request(`/api/authority/summary?days=${days}${area ? `&area=${encodeURIComponent(area)}` : ''}`),
   updateStatus: (id, status, note) => request(`/api/authority/reports/${id}`, { method: 'PATCH', json: { status, note } }),

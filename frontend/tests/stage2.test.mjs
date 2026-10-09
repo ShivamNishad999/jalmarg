@@ -107,56 +107,5 @@ test('all Stage 2 strings have English/Hindi parity', () => {
 })
 
 // Vite env syntax is replaced only in this test process, without a bundler or dependencies.
-const apiSource = (await readFile(new URL('../src/api.js', import.meta.url), 'utf8')).replace('import.meta.env.VITE_API_BASE', "''")
-const { requestPdf, compressImage } = await import(`data:text/javascript;base64,${Buffer.from(apiSource).toString('base64')}`)
-test('PDF transport rejects backend errors and HTML; passes cancellation', async () => {
-  const original = globalThis.fetch
-  try {
-    globalThis.fetch = async () => new Response('{"error":"Missing"}', { status: 404, headers: { 'content-type': 'application/json' } })
-    await assert.rejects(requestPdf('/api/reports/42/evidence.pdf'), (e) => e.status === 404)
-    globalThis.fetch = async () => new Response('<html>', { headers: { 'content-type': 'text/html' } })
-    await assert.rejects(requestPdf('/api/reports/42/evidence.pdf'), /Expected a PDF/)
-    const controller = new AbortController()
-    controller.abort()
-    globalThis.fetch = async (url, options) => { assert.equal(options.signal, controller.signal); throw controller.signal.reason }
-    await assert.rejects(requestPdf('/api/reports/42/evidence.pdf', { signal: controller.signal }), (e) => e.name === 'AbortError')
-  } finally { globalThis.fetch = original }
-})
-test('unsupported image decode rejects and releases its temporary URL', async () => {
-  const OriginalImage = globalThis.Image
-  const revoke = URL.revokeObjectURL
-  let revoked = 0
-  globalThis.Image = class { set src(value) { queueMicrotask(() => this.onerror()) } }
-  URL.revokeObjectURL = (url) => { revoked++; revoke(url) }
-  try {
-    await assert.rejects(compressImage(new Blob(['invalid'], { type: 'image/jpeg' })))
-    assert.equal(revoked, 1)
-  } finally { globalThis.Image = OriginalImage; URL.revokeObjectURL = revoke }
-})
-test('compression retains 1280px JPEG behavior and rejects failed canvas output', async () => {
-  const OriginalImage = globalThis.Image
-  const originalDocument = globalThis.document
-  let canvas
-  let fail = false
-  globalThis.Image = class {
-    width = 2560
-    height = 1280
-    set src(value) { queueMicrotask(() => this.onload()) }
-  }
-  globalThis.document = { createElement: () => (canvas = {
-    getContext: () => ({ drawImage() {} }),
-    toBlob(callback, mime, quality) {
-      assert.equal(mime, 'image/jpeg')
-      assert.equal(quality, 0.82)
-      callback(fail ? null : new Blob(['image'], { type: mime }))
-    }
-  }) }
-  try {
-    const blob = await compressImage(new Blob(['input']))
-    assert.equal(blob.type, 'image/jpeg')
-    assert.equal(canvas.width, 1280)
-    assert.equal(canvas.height, 640)
-    fail = true
-    await assert.rejects(compressImage(new Blob(['input'])), /compression failed/)
-  } finally { globalThis.Image = OriginalImage; globalThis.document = originalDocument }
-})
+// The api.js transport tests from the web build were removed: the app's api.js (accounts, native
+// camera, server address) replaced that module. Its behaviour is covered by the Playwright flow tests.

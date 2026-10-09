@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { MapContainer, TileLayer, CircleMarker, Tooltip } from 'react-leaflet'
-import { CheckCircle2, FileDown, Landmark, RotateCcw } from 'lucide-react'
+import { CheckCircle2, FileDown, Landmark, Radar, RotateCcw } from 'lucide-react'
 import { api, NCR_CENTER, TILE_URL, TILE_ATTRIBUTION, isNativeApp } from '../api'
 import { useLang, errorText } from '../i18n'
 import { SEV_HEX, SeverityPill, timeAgo } from '../components/shared'
 import { Button, Notice, PageHead, Skeleton } from '../components/ui'
+import { RISK_HEX } from '../components/risk'
 
 const AREAS = ['', 'Delhi', 'Noida', 'Greater Noida', 'Ghaziabad', 'Gurugram']
 
@@ -28,6 +29,8 @@ export default function AuthorityPage() {
   const [error, setError] = useState(null)
   const [pdfBusy, setPdfBusy] = useState(null)
   const [recent, setRecent] = useState(null)
+  const [forecast, setForecast] = useState(null)
+  const [monitor, setMonitor] = useState(null)
 
   useEffect(() => {
     setS(null)
@@ -37,6 +40,10 @@ export default function AuthorityPage() {
 
   const loadRecent = () => api.recentReports(3).then((r) => setRecent(Array.isArray(r) ? r : [])).catch((e) => { setError(e); setRecent([]) })
   useEffect(() => { loadRecent() }, [])
+  useEffect(() => {
+    api.floodRiskHotspots().then((f) => setForecast(Array.isArray(f) ? f : [])).catch(() => setForecast([]))
+    api.floodRiskStatus().then(setMonitor).catch(() => {})
+  }, [])
 
   /** PDF needs the sign-in token, so fetch it as a blob instead of a plain link. */
   const downloadPdf = async (opts, key) => {
@@ -148,6 +155,23 @@ export default function AuthorityPage() {
           </section>
         </>
       )}
+
+      <section className="card stack">
+        <h3 className="card-title"><Radar size={18} aria-hidden /> {t('forecastTitle')}</h3>
+        <p className="small muted">{t('forecastSub')}{monitor ? ` · ${monitor.totalCycles ?? 0} ${t('monitorCycles')}` : ''}</p>
+        {forecast === null && <><Skeleton h={44} /><Skeleton h={44} /></>}
+        {forecast && forecast.filter((f) => f.status !== 'NO_IMMEDIATE_RISK').length === 0 && <p className="muted small">{t('noForecast')}</p>}
+        {forecast && forecast.filter((f) => f.status !== 'NO_IMMEDIATE_RISK').slice(0, 10).map((f) => (
+          <div key={f.id} className="forecast-row">
+            <div>
+              <b>{f.hotspotName}</b>
+              <div className="small muted">{f.area || '-'} · {(f.rainfallNext6hMm ?? 0).toFixed(1)} mm / 6 h{f.activeReportCount ? ` · ${f.activeReportCount} ${t('liveReportsNear')}` : ''}</div>
+            </div>
+            <span className="pill" style={{ background: RISK_HEX[f.riskLevel] || RISK_HEX.UNKNOWN }}>{t('risk_' + (f.riskLevel || 'UNKNOWN'))} · {f.riskScore}</span>
+          </div>
+        ))}
+        <p className="disclaimer">{t('predictiveDisclaimer')}</p>
+      </section>
 
       <section className="card stack">
         <h3 className="card-title">{t('reportsToReview')}</h3>

@@ -7,6 +7,7 @@ import { useLang, errorText } from '../i18n'
 import { Button, Notice, PageHead } from '../components/ui'
 import PlaceSearch from '../components/PlaceSearch'
 import { severityIcon, youIcon, SEV_HEX } from '../components/shared'
+import { riskIcon } from '../components/risk'
 
 // Depth (ft) above which a flooded spot blocks this way of travelling
 const LIMIT = { bike: 0.5, car: 0.8, walk: 1.5 }
@@ -185,7 +186,9 @@ export default function RoutePage() {
                     <div className="small">
                       {t('passes')} {r.hazards.length} {t('floodedSpots')}:
                       {r.hazards.slice(0, 3).map((h) => (
-                        <div key={h.reportId} style={{ color: SEV_HEX[h.severity] }}>• {h.locationName} ({h.depthFt.toFixed(1)} ft)</div>
+                        h.hazardType === 'PREDICTED'
+                          ? <div key={'p' + h.latitude + h.longitude} className="hazard-forecast">• {h.locationName.replace('[Forecast Risk] ', '')} ({t('forecastHazard')})</div>
+                          : <div key={h.reportId} style={{ color: SEV_HEX[h.severity] }}>• {h.locationName} ({h.depthFt.toFixed(1)} ft)</div>
                       ))}
                     </div>
                   )}
@@ -208,9 +211,10 @@ export default function RoutePage() {
               eventHandlers={{ click: () => setChosen(i) }} />
           ))}
           {best && <Polyline positions={best.coords} pathOptions={{ color: best.blocking ? '#EA580C' : '#0EA5E9', weight: 7, opacity: 0.9 }} />}
-          {[...new Map(options.flatMap((r) => r.hazards).map((h) => [h.reportId, h])).values()].map((h) => (
-            <Marker key={'h' + h.reportId} position={[h.latitude, h.longitude]} icon={severityIcon(h.severity, true)}>
-              <Popup>{h.locationName}<br />{h.depthFt.toFixed(1)} ft</Popup>
+          {[...new Map(options.flatMap((r) => r.hazards).map((h) => [h.reportId ?? `${h.latitude},${h.longitude}`, h])).values()].map((h) => (
+            <Marker key={'h' + (h.reportId ?? `${h.latitude},${h.longitude}`)} position={[h.latitude, h.longitude]}
+              icon={h.hazardType === 'PREDICTED' ? riskIcon(h.severity === 'HIGH' ? 'CRITICAL' : 'HIGH') : severityIcon(h.severity, true)}>
+              <Popup>{h.locationName.replace('[Forecast Risk] ', '')}<br />{h.hazardType === 'PREDICTED' ? t('forecastHazard') : `${h.depthFt.toFixed(1)} ft`}</Popup>
             </Marker>
           ))}
         </MapContainer>

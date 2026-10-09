@@ -128,12 +128,15 @@ export function ReportCard({ r, onChange, compact = false }) {
       <div className="report-depth">
         <DepthGauge ft={r.depthFt} />
         <div>
-          <div className="depth-num">≈{r.depthFt.toFixed(1)} <small>{t('ft')}</small></div>
+          {r.depthFt > 0
+            ? <div className="depth-num">≈{r.depthFt.toFixed(1)} <small>{t('ft')}</small></div>
+            : <div className="depth-num small-num">{t('depthUnmeasured')}</div>}
           <div className="muted small">{t('estDepth')}{src ? ` · ${src}` : ''}{r.aiConfidence != null && ` · ${Math.round(r.aiConfidence * 100)}%`}</div>
           {r.confirmations > 0 && <div className="muted small"><Users size={12} aria-hidden /> {t('confirmedBy')} {r.confirmations} {t('people')}</div>}
         </div>
       </div>
       {summary && <p className="ai-summary">“{summary}”</p>}
+      {(r.depthSource === 'AI' || r.depthSource === 'AI_AND_CITIZEN') && <p className="disclaimer">{t('aiNote')}</p>}
       <SafetyChips r={r} />
       <p className="disclaimer">{t('estimateNote')}</p>
       {r.note && !r.demo && <p className="small">{r.note}</p>}

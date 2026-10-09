@@ -17,7 +17,23 @@ jobs:
           distribution: corretto   # Amazon Corretto, AWS's open-source JDK
           java-version: '21'
           cache: maven
-      - run: mvn -B -q package
+      - name: Build and test
+        run: |
+          set -o pipefail
+          mvn -B package 2>&1 | tee build.log
+      - name: Report failures as annotations
+        if: failure()
+        run: |
+          # compile errors and failing tests show up on the commit, readable without the raw log
+          grep -E "^\[ERROR\]" build.log | grep -vE "^\[ERROR\] *$|Help 1|-> \[Help|Re-run Maven|For more information|To see the full" | head -40 | while IFS= read -r line; do
+            echo "::error::${line//%/%25}"
+          done
+          for f in target/surefire-reports/*.txt; do
+            [ -f "$f" ] || continue
+            if grep -qE "FAILURE|ERROR" "$f"; then
+              grep -A4 -E "<<< (FAILURE|ERROR)" "$f" | head -12 | tr '\n' ' ' | cut -c1-900 | while IFS= read -r line; do echo "::error title=$(basename $f)::$line"; done
+            fi
+          done
 
   frontend:
     runs-on: ubuntu-latest
@@ -33,3 +49,4 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm run build
+      - run: node --test tests/
