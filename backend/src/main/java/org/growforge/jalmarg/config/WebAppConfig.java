@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.resource.PathResourceResolver;
 
@@ -31,11 +32,21 @@ public class WebAppConfig implements WebMvcConfigurer {
         this.webDir = webDir == null ? "" : webDir.trim();
     }
 
+    private boolean enabled() {
+        return !webDir.isEmpty() && Files.isRegularFile(Path.of(webDir).toAbsolutePath().normalize().resolve("index.html"));
+    }
+
+    /** The resource handler never sees an empty path, so "/" is forwarded to the app explicitly. */
+    @Override
+    public void addViewControllers(ViewControllerRegistry registry) {
+        if (enabled()) registry.addViewController("/").setViewName("forward:/index.html");
+    }
+
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         if (webDir.isEmpty()) return;
         Path dir = Path.of(webDir).toAbsolutePath().normalize();
-        if (!Files.isRegularFile(dir.resolve("index.html"))) {
+        if (!enabled()) {
             log.warn("WEB_DIR {} has no index.html; web app not served", dir);
             return;
         }
