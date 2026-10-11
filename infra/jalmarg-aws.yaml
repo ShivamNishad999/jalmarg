@@ -12,7 +12,7 @@ Metadata:
       - Label: { default: 'Email for sign-up codes (Gmail app password or Amazon SES SMTP)' }
         Parameters: [MailHost, MailPort, MailUsername, MailPassword, MailFrom]
       - Label: { default: 'App settings' }
-        Parameters: [AiEnabled, SeedDemoData, AlertRunKey, InstanceType, ReleaseBaseUrl]
+        Parameters: [AiEnabled, BedrockModelId, SeedDemoData, AlertRunKey, InstanceType, ReleaseBaseUrl]
     ParameterLabels:
       AdminEmail: { default: 'Admin email' }
       AdminPassword: { default: 'Admin password' }
@@ -65,6 +65,10 @@ Parameters:
     AllowedValues: ['true', 'false']
     Default: 'true'
     Description: Needs Amazon Nova Lite model access enabled in the Bedrock console (Mumbai). Without it the app falls back to citizen depth.
+  BedrockModelId:
+    Type: String
+    Default: apac.amazon.nova-lite-v1:0
+    Description: Bedrock model or inference profile id. Use amazon.nova-lite-v1:0 where Nova Lite runs in-region.
   SeedDemoData:
     Type: String
     AllowedValues: ['true', 'false']
@@ -208,6 +212,7 @@ Resources:
           AWS_REGION="${AWS::Region}"
           BEDROCK_REGION="${AWS::Region}"
           AI_ENABLED="${AiEnabled}"
+          BEDROCK_MODEL_ID="${BedrockModelId}"
           S3_BUCKET="${PhotoBucket}"
           SNS_TOPIC_ARN="${AlertTopic}"
           ALERT_INTERNAL_SCHEDULER="false"
