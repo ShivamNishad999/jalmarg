@@ -1,0 +1,18 @@
+{
+  "readiness_gate": "READY_FOR_BASELINE_TRAINING",
+  "usable_positive_samples": 95,
+  "usable_negative_samples": 575,
+  "total_usable_unique_samples": 670,
+  "class_imbalance_ratio": "1:6.05",
+  "duplicates_excluded": 373,
+  "ambiguous_excluded": 6,
+  "train_samples": 468,
+  "val_samples": 100,
+  "test_samples": 102,
+  "license_status": "LICENSE_REVIEW_REQUIRED",
+  "blockers": [],
+  "warnings": [
+    "Dataset lacks an explicit open-source license file. Permitted for internal research baseline and human-review assist only."
+  ],
+  "release_policy_recommendation": "HUMAN_REVIEW_ASSIST"
+}

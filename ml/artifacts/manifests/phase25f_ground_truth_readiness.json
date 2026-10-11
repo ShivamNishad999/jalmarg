@@ -1,0 +1,25 @@
+{
+  "audit_timestamp_utc": "2026-10-11T10:07:35.153158+00:00",
+  "recalculated_census": {
+    "total_observations": 24,
+    "verified_positives": 0,
+    "partially_verified_positives": 16,
+    "verified_negatives": 0,
+    "unverified_municipal_negatives": 8,
+    "verified_calibrated_depths": 0,
+    "unverified_depth_claims": 16,
+    "rainfall_aligned_observations": 24,
+    "monsoon_seasons_covered": 2
+  },
+  "training_thresholds": {
+    "required_verified_positives": 50,
+    "positive_deficit": 50,
+    "required_verified_negatives": 50,
+    "negative_deficit": 50,
+    "required_calibrated_depths": 30,
+    "depth_deficit": 30
+  },
+  "gate_decision": "BLOCKED_UNVERIFIED_GROUND_TRUTH",
+  "operational_engine": "Calibrated Heuristic Flood-Risk Engine (Active & Preserved)",
+  "blocker_rationale": "Supervised predictive model training strictly BLOCKED. 16 historical flood events are partially verified by public bulletins but lack official PWD/MCD primary PDF files. 8 municipal dry-road inspections are unverified pending field photo evidence review. 16 numerical depth claims lack metrology sensor calibration logs. Heuristic flood risk engine remains active and operational."
+}

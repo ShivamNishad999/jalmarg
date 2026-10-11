@@ -1,0 +1,38 @@
+{
+  "audit_timestamp_utc": "2026-10-11T10:07:35.155056+00:00",
+  "dataset_summary": {
+    "total_images_discovered": 1049,
+    "unique_sha256_count": 671,
+    "exact_duplicates_count": 378,
+    "near_duplicate_pairs_count": 232,
+    "usable_unique_samples": 670,
+    "positive_samples": 95,
+    "folder_inferred_negatives": 575,
+    "independently_verified_negatives": 0,
+    "label_audit_verdict": "CRITICAL AUDIT FINDING: 100% of negative training samples (575 images) were derived heuristically from folder classifications (potholes, cracks, broken_edges, etc.) rather than independent physical ground-truth inspection. They must not be described as human-verified negatives."
+  },
+  "license_governance": {
+    "dataset_provenance": "GitHub repository rohit-lal/irdid",
+    "license_status": "LICENSE_REVIEW_REQUIRED",
+    "deployment_blocker": true,
+    "blocker_reason": "The IRDID dataset repository lacks an explicit OSI-compliant open-source license file (e.g. MIT, Apache 2.0, CC-BY). While permitted for academic research and assistive municipal prototyping, autonomous production enforcement is strictly BLOCKED until formal licensing terms are established.",
+    "commercial_use_permitted": false,
+    "autonomous_enforcement_permitted": false,
+    "human_assisted_review_permitted": true
+  },
+  "abstention_policy": {
+    "policy_name": "DUAL_THRESHOLD_UNCERTAINTY_ABSTENTION",
+    "lower_threshold": 0.35,
+    "upper_threshold": 0.65,
+    "uncertainty_band": "[0.35, 0.65]",
+    "rule": "If model predicted probability p falls within [0.35, 0.65], or confidence < 0.65, the system MUST NOT assign VISIBLE_WATERLOGGING or NO_VISIBLE_WATERLOGGING. The result is classified as INDETERMINATE_HUMAN_REVIEW_REQUIRED and routed to the municipal review queue.",
+    "enforcement_location": "VisionInferenceService.predict() & MunicipalReportReviewService"
+  },
+  "failure_modes_count": 10,
+  "audit_findings": [
+    "100% of negative training samples (575 images) are folder-derived (potholes, cracks, broken edges), not verified dry-road inspections.",
+    "IRDID dataset lacks explicit open-source license; autonomous production deployment is blocked.",
+    "Dual-threshold uncertainty abstention policy [0.35, 0.65] is active."
+  ],
+  "cv_deployment_verdict": "ASSISTIVE_ONLY_AUTONOMOUS_BLOCKED"
+}

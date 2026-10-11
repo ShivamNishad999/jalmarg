@@ -1,0 +1,54 @@
+# JalMarg Geospatial ML Pipeline & Training Readiness Criteria Configuration
+
+pipeline:
+  name: "delhi_ncr_waterlogging_ml_foundation"
+  version: "1.0.0"
+
+spatiotemporal_alignment:
+  time_indices:
+    storage_timezone: "UTC"
+    display_timezone: "Asia/Kolkata"
+    temporal_step_minutes: 60
+  spatial_matching:
+    corridor_buffer_meters: 100.0 # Buffer distance around critical underpass/corridor centroids
+    dem_neighborhood_radius_meters: 150.0 # For relative elevation computation
+
+feature_engineering:
+  rainfall_lead_times_hours: [1, 3, 6, 24]
+  antecedent_precipitation_days: 7
+  terrain_features:
+    - "elevation_m"
+    - "relative_elevation_m"
+    - "slope_degrees"
+    - "depression_index"
+  infrastructure_features:
+    - "road_class"
+    - "distance_to_drain_m"
+    - "known_pumping_capacity_lpm"
+
+quality_validation_rules:
+  rainfall:
+    min_value_mm: 0.0
+    max_plausible_hourly_mm: 180.0 # Extreme cloudburst upper boundary check (records > 180mm/h flagged for manual review)
+    allow_negative: false
+  coordinates:
+    operational_lat_min: 28.00
+    operational_lat_max: 29.20
+    operational_lng_min: 76.50
+    operational_lng_max: 77.80
+  raster:
+    expected_nodata: -999999.0
+    valid_elevation_min_m: 100.0  # Delhi lowest point is ~190m above MSL (Yamuna floodplain)
+    valid_elevation_max_m: 350.0  # Delhi ridge highest point is ~310m above MSL
+
+training_readiness_gate_criteria:
+  minimum_verified_positive_events: 50
+  minimum_verified_negative_observations: 50
+  minimum_monsoon_seasons: 2
+  require_measured_depth_for_regression: true
+  minimum_depth_samples: 30
+  allow_synthetic_labels: false
+  leakage_checks_required:
+    - "no_future_rainfall_in_features"
+    - "historical_density_uses_past_events_only"
+    - "split_by_monsoon_storm_event_not_random"

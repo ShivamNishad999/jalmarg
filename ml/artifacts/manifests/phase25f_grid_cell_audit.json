@@ -1,0 +1,207 @@
+{
+  "audit_timestamp_utc": "2026-10-11T10:07:32.926350+00:00",
+  "monitored_corridors_count": 11,
+  "unique_physical_grid_cells_count": 7,
+  "shared_grid_cells_count": 4,
+  "independent_grid_cells_count": 3,
+  "native_grid_resolution": "0.1\u00b0 x 0.1\u00b0 (~9 km ERA5-Land)",
+  "total_corridor_hourly_records": 128832,
+  "unique_grid_cell_hourly_records": 81984,
+  "spatial_replication_factor": 1.571,
+  "scientific_assessment": "11 monitored corridors resolve to 7 unique physical ERA5-Land reanalysis grid cells. 4 grid cells are shared across 8 corridors. Corridors sharing a grid cell receive identical precipitation series. Analysis must not treat corridor-specific reanalysis lookups as 11 independent gauges.",
+  "grid_cells": [
+    {
+      "grid_cell_id": "ERA5_28.6467_77.2748",
+      "grid_latitude": 28.646748,
+      "grid_longitude": 77.2748,
+      "corridors_count": 2,
+      "corridors": [
+        "Minto Bridge underpass, Connaught Place",
+        "ITO crossing, Vikas Marg"
+      ],
+      "is_shared_cell": true,
+      "rainfall_series_identical": true
+    },
+    {
+      "grid_cell_id": "ERA5_28.5062_77.3037",
+      "grid_latitude": 28.50615,
+      "grid_longitude": 77.30375,
+      "corridors_count": 2,
+      "corridors": [
+        "Pul Prahladpur underpass, MB Road",
+        "Badarpur Border / NH-19"
+      ],
+      "is_shared_cell": true,
+      "rainfall_series_identical": true
+    },
+    {
+      "grid_cell_id": "ERA5_28.4359_77.0114",
+      "grid_latitude": 28.435852,
+      "grid_longitude": 77.01136,
+      "corridors_count": 1,
+      "corridors": [
+        "Hero Honda Chowk, NH-48"
+      ],
+      "is_shared_cell": false,
+      "rainfall_series_identical": true
+    },
+    {
+      "grid_cell_id": "ERA5_28.6467_77.1722",
+      "grid_latitude": 28.646748,
+      "grid_longitude": 77.17218,
+      "corridors_count": 2,
+      "corridors": [
+        "Zakhira underpass, Rohtak Road",
+        "Azad Market underpass"
+      ],
+      "is_shared_cell": true,
+      "rainfall_series_identical": true
+    },
+    {
+      "grid_cell_id": "ERA5_28.6467_77.3774",
+      "grid_latitude": 28.646748,
+      "grid_longitude": 77.377426,
+      "corridors_count": 2,
+      "corridors": [
+        "NH-9 underpass near Sector 62",
+        "Mohan Nagar / GT Road"
+      ],
+      "is_shared_cell": true,
+      "rainfall_series_identical": true
+    },
+    {
+      "grid_cell_id": "ERA5_28.5764_77.1868",
+      "grid_latitude": 28.576448,
+      "grid_longitude": 77.18678,
+      "corridors_count": 1,
+      "corridors": [
+        "Dhaula Kuan Ridge Junction"
+      ],
+      "is_shared_cell": false,
+      "rainfall_series_identical": true
+    },
+    {
+      "grid_cell_id": "ERA5_28.4359_77.5227",
+      "grid_latitude": 28.435852,
+      "grid_longitude": 77.52273,
+      "corridors_count": 1,
+      "corridors": [
+        "Pari Chowk"
+      ],
+      "is_shared_cell": false,
+      "rainfall_series_identical": true
+    }
+  ],
+  "corridor_mappings": [
+    {
+      "corridor_name": "Minto Bridge underpass, Connaught Place",
+      "administrative_zone": "Central Delhi",
+      "requested_latitude": 28.6347,
+      "requested_longitude": 77.2263,
+      "returned_grid_latitude": 28.646748,
+      "returned_grid_longitude": 77.2748,
+      "grid_cell_id": "ERA5_28.6467_77.2748",
+      "dem_elevation_m": 214.0
+    },
+    {
+      "corridor_name": "Pul Prahladpur underpass, MB Road",
+      "administrative_zone": "South Delhi",
+      "requested_latitude": 28.5019,
+      "requested_longitude": 77.2873,
+      "returned_grid_latitude": 28.50615,
+      "returned_grid_longitude": 77.30375,
+      "grid_cell_id": "ERA5_28.5062_77.3037",
+      "dem_elevation_m": 220.0
+    },
+    {
+      "corridor_name": "Hero Honda Chowk, NH-48",
+      "administrative_zone": "Gurugram",
+      "requested_latitude": 28.4296,
+      "requested_longitude": 77.0118,
+      "returned_grid_latitude": 28.435852,
+      "returned_grid_longitude": 77.01136,
+      "grid_cell_id": "ERA5_28.4359_77.0114",
+      "dem_elevation_m": 224.0
+    },
+    {
+      "corridor_name": "Zakhira underpass, Rohtak Road",
+      "administrative_zone": "West Delhi",
+      "requested_latitude": 28.6612,
+      "requested_longitude": 77.1455,
+      "returned_grid_latitude": 28.646748,
+      "returned_grid_longitude": 77.17218,
+      "grid_cell_id": "ERA5_28.6467_77.1722",
+      "dem_elevation_m": 219.0
+    },
+    {
+      "corridor_name": "Azad Market underpass",
+      "administrative_zone": "North Delhi",
+      "requested_latitude": 28.6667,
+      "requested_longitude": 77.2064,
+      "returned_grid_latitude": 28.646748,
+      "returned_grid_longitude": 77.17218,
+      "grid_cell_id": "ERA5_28.6467_77.1722",
+      "dem_elevation_m": 227.0
+    },
+    {
+      "corridor_name": "NH-9 underpass near Sector 62",
+      "administrative_zone": "Noida",
+      "requested_latitude": 28.628,
+      "requested_longitude": 77.369,
+      "returned_grid_latitude": 28.646748,
+      "returned_grid_longitude": 77.377426,
+      "grid_cell_id": "ERA5_28.6467_77.3774",
+      "dem_elevation_m": 203.0
+    },
+    {
+      "corridor_name": "ITO crossing, Vikas Marg",
+      "administrative_zone": "East Delhi",
+      "requested_latitude": 28.6289,
+      "requested_longitude": 77.241,
+      "returned_grid_latitude": 28.646748,
+      "returned_grid_longitude": 77.2748,
+      "grid_cell_id": "ERA5_28.6467_77.2748",
+      "dem_elevation_m": 210.0
+    },
+    {
+      "corridor_name": "Dhaula Kuan Ridge Junction",
+      "administrative_zone": "New Delhi",
+      "requested_latitude": 28.592,
+      "requested_longitude": 77.161,
+      "returned_grid_latitude": 28.576448,
+      "returned_grid_longitude": 77.18678,
+      "grid_cell_id": "ERA5_28.5764_77.1868",
+      "dem_elevation_m": 247.0
+    },
+    {
+      "corridor_name": "Mohan Nagar / GT Road",
+      "administrative_zone": "Ghaziabad",
+      "requested_latitude": 28.6791,
+      "requested_longitude": 77.3912,
+      "returned_grid_latitude": 28.646748,
+      "returned_grid_longitude": 77.377426,
+      "grid_cell_id": "ERA5_28.6467_77.3774",
+      "dem_elevation_m": 206.0
+    },
+    {
+      "corridor_name": "Badarpur Border / NH-19",
+      "administrative_zone": "Faridabad",
+      "requested_latitude": 28.49,
+      "requested_longitude": 77.3,
+      "returned_grid_latitude": 28.50615,
+      "returned_grid_longitude": 77.30375,
+      "grid_cell_id": "ERA5_28.5062_77.3037",
+      "dem_elevation_m": 217.0
+    },
+    {
+      "corridor_name": "Pari Chowk",
+      "administrative_zone": "Greater Noida",
+      "requested_latitude": 28.465,
+      "requested_longitude": 77.511,
+      "returned_grid_latitude": 28.435852,
+      "returned_grid_longitude": 77.52273,
+      "grid_cell_id": "ERA5_28.4359_77.5227",
+      "dem_elevation_m": 197.0
+    }
+  ]
+}

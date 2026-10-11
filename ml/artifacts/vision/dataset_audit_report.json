@@ -1,0 +1,50 @@
+{
+  "dataset_root": "D:\\jalmarg\\jalmarg\\ml\\datasets\\irdid",
+  "total_images_discovered": 1049,
+  "corrupted_images_count": 0,
+  "corrupted_files": [],
+  "unique_sha256_count": 671,
+  "exact_duplicates_count": 378,
+  "cross_class_duplicates_count": 1,
+  "cross_class_duplicates": [
+    {
+      "sha256": "e243902357d3eadb8bcee9694b8c9063617a11d261751de7397425dd98f4b6bf",
+      "classes": [
+        "broken_edges",
+        "waterlogged_roads"
+      ],
+      "paths": [
+        "D:\\jalmarg\\jalmarg\\ml\\datasets\\irdid\\images\\images\\broken_edges\\img0802.jpg",
+        "D:\\jalmarg\\jalmarg\\ml\\datasets\\irdid\\images\\images\\broken_edges\\img0827.jpg",
+        "D:\\jalmarg\\jalmarg\\ml\\datasets\\irdid\\images\\images\\broken_edges\\img0856.jpg",
+        "D:\\jalmarg\\jalmarg\\ml\\datasets\\irdid\\images\\images\\broken_edges\\img0876.jpg",
+        "D:\\jalmarg\\jalmarg\\ml\\datasets\\irdid\\images\\images\\waterlogged_roads\\img0640.jpg",
+        "D:\\jalmarg\\jalmarg\\ml\\datasets\\irdid\\images\\images\\waterlogged_roads\\img0701.jpg"
+      ]
+    }
+  ],
+  "near_duplicate_pairs_count": 232,
+  "class_distribution_raw": {
+    "broken_edges": 147,
+    "construction_zones": 102,
+    "cracks": 200,
+    "open_manholes": 200,
+    "potholes": 200,
+    "waterlogged_roads": 200
+  },
+  "formats_distribution": {
+    "JPEG": 1043,
+    "PNG": 6
+  },
+  "color_modes_distribution": {
+    "RGB": 1041,
+    "RGBA": 2,
+    "L": 6
+  },
+  "dimensions_distribution": {
+    "256x256": 1049
+  },
+  "license_status": "LICENSE_REVIEW_REQUIRED",
+  "license_notes": "IRDID road damage image repository lacks an embedded permissive LICENSE file; marked for research and human-review assist only.",
+  "audit_verdict": "DATASET_PARSED_VALID"
+}

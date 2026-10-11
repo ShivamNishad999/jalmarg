@@ -1,0 +1,155 @@
+# ==============================================================================
+# JALMARG ROOT .GITIGNORE
+# Configured for: Java 21 / Spring Boot, React 18 / Vite, Python 3.13 / ML,
+#                 PostgreSQL / PostGIS, Docker, and Windows Environments
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Environment & Sensitive Credentials
+# ------------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+!.env.*.template
+*.pem
+*.key
+*.cert
+*.crt
+*.pfx
+*.p12
+*.jks
+credentials.json
+secrets.json
+
+# ------------------------------------------------------------------------------
+# 2. Database Dumps, Backups & Volatile Storage
+# ------------------------------------------------------------------------------
+backups/
+*.sql.gz
+*.dump
+*.backup
+*.rdb
+*.bak
+backend/data/
+
+# ------------------------------------------------------------------------------
+# 3. Java / Maven Build Artifacts
+# ------------------------------------------------------------------------------
+target/
+**/target/
+*.class
+*.jar
+*.war
+*.ear
+.mvn/.wagon/
+.mvn/wrapper/maven-wrapper.jar
+
+# ------------------------------------------------------------------------------
+# 4. Node / Frontend Build Artifacts
+# ------------------------------------------------------------------------------
+node_modules/
+**/node_modules/
+frontend/dist/
+frontend/dev-dist/
+dist/
+build/
+.npm/
+.yarn/
+*.tsbuildinfo
+frontend_backup_*/
+*_backup_*/
+merge_report.csv
+
+# ------------------------------------------------------------------------------
+# 5. Python / Scientific ML Artifacts
+# ------------------------------------------------------------------------------
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+**/.venv/
+env/
+venv/
+ENV/
+.pytest_cache/
+**/.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+eggs/
+*.egg
+
+# ------------------------------------------------------------------------------
+# 6. ML Datasets & Acquired Raw Data (Licensing & Size Exclusions)
+# ------------------------------------------------------------------------------
+# IRDID dataset lacks an OSI-compliant open license; excluded from publication
+ml/datasets/
+# Large downloaded multi-year meteorological reanalysis raw extractions (>60MB)
+ml/artifacts/acquired_data/
+# Binary model weights
+*.pt
+*.pth
+*.onnx
+*.safetensors
+*.ckpt
+*.h5
+
+# ------------------------------------------------------------------------------
+# 7. Local File Uploads & User Generated Content
+# ------------------------------------------------------------------------------
+uploads/
+**/uploads/
+backend/uploads/
+
+# ------------------------------------------------------------------------------
+# 8. Logs & Local Runtime Caches
+# ------------------------------------------------------------------------------
+logs/
+**/logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ------------------------------------------------------------------------------
+# 9. IDE & Editor Artifacts
+# ------------------------------------------------------------------------------
+.idea/
+**/.idea/
+*.iml
+*.iws
+.classpath
+.project
+.settings/
+.vscode/
+**/.vscode/
+*.sublime-workspace
+*.sublime-project
+
+# ------------------------------------------------------------------------------
+# 10. Operating System & Machine-Specific Files
+# ------------------------------------------------------------------------------
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+Desktop.ini
+desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~

@@ -1,0 +1,69 @@
+{
+  "manifest_version": "1.0.0",
+  "created_at": "2026-10-10T07:53:26.952655+00:00",
+  "total_datasets": 5,
+  "verified_datasets_count": 3,
+  "blocked_datasets_count": 2,
+  "entries": [
+    {
+      "dataset_code": "COP_DEM_GLO30",
+      "source_name": "Copernicus DEM GLO-30 COG",
+      "provenance_type": "OBSERVED",
+      "verification_status": "VERIFIED",
+      "file_path": "D:\\jalmarg\\jalmarg\\backend\\data\\dem\\Copernicus_DSM_COG_10_N28_00_E077_00_DEM.tif",
+      "file_size_bytes": 41680243,
+      "sha256_checksum": "a8e69d432869bf85a63b7cfcaa61b5a770c7705125b3cfde9b892d65dfed98b4",
+      "records_count": 12960000,
+      "last_verified": "2026-10-10T07:53:16.038392+00:00",
+      "notes": "Verified authentic Copernicus DEM tile (39.75 MB, 3600x3600 pixels)"
+    },
+    {
+      "dataset_code": "OPEN_METEO_ARCHIVE",
+      "source_name": "Open-Meteo Historical Weather Archive",
+      "provenance_type": "REANALYSIS",
+      "verification_status": "VERIFIED",
+      "file_path": "D:\\jalmarg\\jalmarg\\ml\\artifacts\\acquired_data\\delhi_ncr_historical_rainfall_2024-07-01_2024-07-31.json",
+      "file_size_bytes": 622004,
+      "sha256_checksum": "92d88094a8f9e79133e30edf6391a44b9fb810fb72fae85ade41b765ce243e8a",
+      "records_count": 2232,
+      "last_verified": "2026-10-10T07:53:26.899968+00:00",
+      "notes": "Acquired 2232 authentic hourly reanalysis precipitation records across 3 Delhi NCR corridors"
+    },
+    {
+      "dataset_code": "IMD_OBSERVED_RAINFALL",
+      "source_name": "IMD Ground Station Rainfall Observations",
+      "provenance_type": "OBSERVED",
+      "verification_status": "BLOCKED",
+      "file_path": "",
+      "file_size_bytes": 0,
+      "sha256_checksum": "",
+      "records_count": 0,
+      "last_verified": "2026-10-10T07:53:26.905695+00:00",
+      "notes": "Acquisition is BLOCKED. To acquire authentic IMD AWS observations, obtain authorized API access from mausam.imd.gov.in / aws.imd.gov.in and set environment variables IMD_API_KEY and IMD_CLIENT_ID. In adherence to Phase 25A rules, no fake API calls or synthetic rainfall data were generated."
+    },
+    {
+      "dataset_code": "ERA5_LAND_CDS",
+      "source_name": "Copernicus ERA5-Land Direct CDS API",
+      "provenance_type": "REANALYSIS",
+      "verification_status": "BLOCKED",
+      "file_path": "",
+      "file_size_bytes": 0,
+      "sha256_checksum": "",
+      "records_count": 0,
+      "last_verified": "2026-10-10T07:53:26.909622+00:00",
+      "notes": "Acquisition is BLOCKED. To acquire authentic ERA5-Land GRIB/NetCDF directly from Copernicus, register at https://cds.climate.copernicus.eu and create ~/.cdsapirc containing your UID and API key. Note: Open-Meteo Historical Archive serves ERA5-Land reanalysis without separate CDS credentials."
+    },
+    {
+      "dataset_code": "JALMARG_TWIN_MUNICIPAL",
+      "source_name": "JalMarg PostGIS Municipal Records",
+      "provenance_type": "OBSERVED",
+      "verification_status": "VERIFIED",
+      "file_path": "",
+      "file_size_bytes": 0,
+      "sha256_checksum": "",
+      "records_count": 200,
+      "last_verified": "2026-10-10T07:53:26.942971+00:00",
+      "notes": "Audited 200 total records from jalmarg_twin: 2 verified positive events, 0 verified negative observations, 198 unverified citizen submissions."
+    }
+  ]
+}

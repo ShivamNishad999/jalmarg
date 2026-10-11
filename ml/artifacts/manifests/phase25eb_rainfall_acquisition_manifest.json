@@ -1,0 +1,463 @@
+{
+  "manifest_version": "2026.1-PHASE25EB",
+  "generated_at_utc": "2026-10-11T09:30:18.460843+00:00",
+  "geographic_bounding_scope": "Delhi National Capital Region (NCR)",
+  "administrative_zones_covered": [
+    "Central Delhi",
+    "South Delhi",
+    "West Delhi",
+    "North Delhi",
+    "East Delhi",
+    "New Delhi",
+    "Gurugram",
+    "Noida",
+    "Greater Noida",
+    "Ghaziabad",
+    "Faridabad"
+  ],
+  "monitored_corridors_count": 11,
+  "source_evaluations": {
+    "PRIORITY_A_IMD_AWS": {
+      "source_title": "India Meteorological Department Ground AWS Observations",
+      "access_verdict": "BLOCKED_OFFICIAL_ACCESS",
+      "notes": "Machine-readable high-frequency API requires institutional ministry authentication."
+    },
+    "PRIORITY_B_COPERNICUS_ERA5_LAND_DIRECT": {
+      "source_title": "Copernicus CDS ERA5-Land Direct NetCDF API",
+      "access_verdict": "BLOCKED_OFFICIAL_ACCESS",
+      "notes": "Requires ~/.cdsapirc token configuration on host."
+    },
+    "PRIORITY_C_OPEN_METEO_HISTORICAL_ARCHIVE": {
+      "source_title": "Open-Meteo Historical Weather Archive (ERA5-Land Backend)",
+      "access_verdict": "ACQUIRED_AND_VALIDATED",
+      "license": "CC-BY-4.0",
+      "spatial_resolution": "0.1\u00b0 (~9 km grid)",
+      "temporal_resolution": "Hourly",
+      "units": "Precipitation in mm"
+    }
+  },
+  "target_periods_count": 10,
+  "total_hourly_records_acquired": 128832,
+  "periods": [
+    {
+      "period_code": "2023_MONSOON_JUN",
+      "name": "June 2023 Southwest Monsoon Onset",
+      "start_date": "2023-06-01",
+      "end_date": "2023-06-30",
+      "priority": "HIGH",
+      "rationale": "Southwest monsoon onset and pre-monsoon convective thunderstorms",
+      "acquisition_status": "ACQUIRED_AND_VALIDATED",
+      "source_dataset": "OPEN_METEO_ERA5_LAND",
+      "licensing": "CC-BY-4.0",
+      "spatial_resolution": "0.1\u00b0 (~9 km ERA5-Land grid)",
+      "temporal_resolution": "Hourly",
+      "file_path": "D:\\jalmarg\\jalmarg\\ml\\artifacts\\acquired_data\\delhi_ncr_historical_rainfall_2023-06-01_2023-06-30.json",
+      "file_size_bytes": 4482016,
+      "sha256_checksum": "a3b7a42fcfafd217b7a547ab9c09cb02c7a3e80390bc64f2e568c80c5b6173ef",
+      "records_count": 7920,
+      "validation": {
+        "file_name": "delhi_ncr_historical_rainfall_2023-06-01_2023-06-30.json",
+        "total_records": 7920,
+        "corridors_count": 11,
+        "distinct_grid_cells_count": 7,
+        "start_timestamp_utc": "2023-06-01T00:00",
+        "end_timestamp_utc": "2023-06-30T23:00",
+        "coordinate_bounds": {
+          "min_latitude": 28.4296,
+          "max_latitude": 28.6791,
+          "min_longitude": 77.0118,
+          "max_longitude": 77.511,
+          "bounds_valid_delhi_ncr": true
+        },
+        "quality_metrics": {
+          "valid_records": 7920,
+          "missing_records": 0,
+          "negative_records": 0,
+          "duplicate_records": 0,
+          "completeness_percentage": 100.0,
+          "peak_precipitation_mm_per_h": 14.5,
+          "no_silent_zero_fills_enforced": true,
+          "quality_status": "PASSED_QUALITY_CHECKS"
+        }
+      }
+    },
+    {
+      "period_code": "2023_MONSOON_JUL",
+      "name": "July 2023 Historical Monsoon Deluge & Yamuna Surge",
+      "start_date": "2023-07-01",
+      "end_date": "2023-07-31",
+      "priority": "CRITICAL",
+      "rationale": "Historical July 9-13 monsoon deluge (153mm single-day) and Yamuna 208.66m flood surge",
+      "acquisition_status": "ACQUIRED_AND_VALIDATED",
+      "source_dataset": "OPEN_METEO_ERA5_LAND",
+      "licensing": "CC-BY-4.0",
+      "spatial_resolution": "0.1\u00b0 (~9 km ERA5-Land grid)",
+      "temporal_resolution": "Hourly",
+      "file_path": "D:\\jalmarg\\jalmarg\\ml\\artifacts\\acquired_data\\delhi_ncr_historical_rainfall_2023-07-01_2023-07-31.json",
+      "file_size_bytes": 4631434,
+      "sha256_checksum": "3806deaf6d68dad947f6fa343388744af5d4f6a17daf77b07143814fb1b45d1b",
+      "records_count": 8184,
+      "validation": {
+        "file_name": "delhi_ncr_historical_rainfall_2023-07-01_2023-07-31.json",
+        "total_records": 8184,
+        "corridors_count": 11,
+        "distinct_grid_cells_count": 7,
+        "start_timestamp_utc": "2023-07-01T00:00",
+        "end_timestamp_utc": "2023-07-31T23:00",
+        "coordinate_bounds": {
+          "min_latitude": 28.4296,
+          "max_latitude": 28.6791,
+          "min_longitude": 77.0118,
+          "max_longitude": 77.511,
+          "bounds_valid_delhi_ncr": true
+        },
+        "quality_metrics": {
+          "valid_records": 8184,
+          "missing_records": 0,
+          "negative_records": 0,
+          "duplicate_records": 0,
+          "completeness_percentage": 100.0,
+          "peak_precipitation_mm_per_h": 15.3,
+          "no_silent_zero_fills_enforced": true,
+          "quality_status": "PASSED_QUALITY_CHECKS"
+        }
+      }
+    },
+    {
+      "period_code": "2023_MONSOON_AUG",
+      "name": "August 2023 Active Monsoon Spells",
+      "start_date": "2023-08-01",
+      "end_date": "2023-08-31",
+      "priority": "HIGH",
+      "rationale": "Active monsoon spells and localized underpass inundations",
+      "acquisition_status": "ACQUIRED_AND_VALIDATED",
+      "source_dataset": "OPEN_METEO_ERA5_LAND",
+      "licensing": "CC-BY-4.0",
+      "spatial_resolution": "0.1\u00b0 (~9 km ERA5-Land grid)",
+      "temporal_resolution": "Hourly",
+      "file_path": "D:\\jalmarg\\jalmarg\\ml\\artifacts\\acquired_data\\delhi_ncr_historical_rainfall_2023-08-01_2023-08-31.json",
+      "file_size_bytes": 4631403,
+      "sha256_checksum": "73ef0788062f43e42526c427062f9bd9387655e7ee9e35e680a39b56957a4ace",
+      "records_count": 8184,
+      "validation": {
+        "file_name": "delhi_ncr_historical_rainfall_2023-08-01_2023-08-31.json",
+        "total_records": 8184,
+        "corridors_count": 11,
+        "distinct_grid_cells_count": 7,
+        "start_timestamp_utc": "2023-08-01T00:00",
+        "end_timestamp_utc": "2023-08-31T23:00",
+        "coordinate_bounds": {
+          "min_latitude": 28.4296,
+          "max_latitude": 28.6791,
+          "min_longitude": 77.0118,
+          "max_longitude": 77.511,
+          "bounds_valid_delhi_ncr": true
+        },
+        "quality_metrics": {
+          "valid_records": 8184,
+          "missing_records": 0,
+          "negative_records": 0,
+          "duplicate_records": 0,
+          "completeness_percentage": 100.0,
+          "peak_precipitation_mm_per_h": 8.5,
+          "no_silent_zero_fills_enforced": true,
+          "quality_status": "PASSED_QUALITY_CHECKS"
+        }
+      }
+    },
+    {
+      "period_code": "2023_MONSOON_SEP",
+      "name": "September 2023 Late Monsoon Withdrawal",
+      "start_date": "2023-09-01",
+      "end_date": "2023-09-30",
+      "priority": "MEDIUM",
+      "rationale": "Late monsoon withdrawal convective events",
+      "acquisition_status": "ACQUIRED_AND_VALIDATED",
+      "source_dataset": "OPEN_METEO_ERA5_LAND",
+      "licensing": "CC-BY-4.0",
+      "spatial_resolution": "0.1\u00b0 (~9 km ERA5-Land grid)",
+      "temporal_resolution": "Hourly",
+      "file_path": "D:\\jalmarg\\jalmarg\\ml\\artifacts\\acquired_data\\delhi_ncr_historical_rainfall_2023-09-01_2023-09-30.json",
+      "file_size_bytes": 4482007,
+      "sha256_checksum": "1374843d5b918edf3f240c381f7ee7f258062dfc628e1a5592cacf6a7d3e175e",
+      "records_count": 7920,
+      "validation": {
+        "file_name": "delhi_ncr_historical_rainfall_2023-09-01_2023-09-30.json",
+        "total_records": 7920,
+        "corridors_count": 11,
+        "distinct_grid_cells_count": 7,
+        "start_timestamp_utc": "2023-09-01T00:00",
+        "end_timestamp_utc": "2023-09-30T23:00",
+        "coordinate_bounds": {
+          "min_latitude": 28.4296,
+          "max_latitude": 28.6791,
+          "min_longitude": 77.0118,
+          "max_longitude": 77.511,
+          "bounds_valid_delhi_ncr": true
+        },
+        "quality_metrics": {
+          "valid_records": 7920,
+          "missing_records": 0,
+          "negative_records": 0,
+          "duplicate_records": 0,
+          "completeness_percentage": 100.0,
+          "peak_precipitation_mm_per_h": 15.1,
+          "no_silent_zero_fills_enforced": true,
+          "quality_status": "PASSED_QUALITY_CHECKS"
+        }
+      }
+    },
+    {
+      "period_code": "2024_MONSOON_JUN",
+      "name": "June 2024 Monsoon Cloudburst",
+      "start_date": "2024-06-01",
+      "end_date": "2024-06-30",
+      "priority": "CRITICAL",
+      "rationale": "June 28, 2024 Safdarjung 228mm extreme rainfall cloudburst",
+      "acquisition_status": "ACQUIRED_AND_VALIDATED",
+      "source_dataset": "OPEN_METEO_ERA5_LAND",
+      "licensing": "CC-BY-4.0",
+      "spatial_resolution": "0.1\u00b0 (~9 km ERA5-Land grid)",
+      "temporal_resolution": "Hourly",
+      "file_path": "D:\\jalmarg\\jalmarg\\ml\\artifacts\\acquired_data\\delhi_ncr_historical_rainfall_2024-06-01_2024-06-30.json",
+      "file_size_bytes": 4482015,
+      "sha256_checksum": "a7b630cb42ef019217eb5c3b0815e2063cb881c26f054213a88ece64206a984c",
+      "records_count": 7920,
+      "validation": {
+        "file_name": "delhi_ncr_historical_rainfall_2024-06-01_2024-06-30.json",
+        "total_records": 7920,
+        "corridors_count": 11,
+        "distinct_grid_cells_count": 7,
+        "start_timestamp_utc": "2024-06-01T00:00",
+        "end_timestamp_utc": "2024-06-30T23:00",
+        "coordinate_bounds": {
+          "min_latitude": 28.4296,
+          "max_latitude": 28.6791,
+          "min_longitude": 77.0118,
+          "max_longitude": 77.511,
+          "bounds_valid_delhi_ncr": true
+        },
+        "quality_metrics": {
+          "valid_records": 7920,
+          "missing_records": 0,
+          "negative_records": 0,
+          "duplicate_records": 0,
+          "completeness_percentage": 100.0,
+          "peak_precipitation_mm_per_h": 25.4,
+          "no_silent_zero_fills_enforced": true,
+          "quality_status": "PASSED_QUALITY_CHECKS"
+        }
+      }
+    },
+    {
+      "period_code": "2024_MONSOON_JUL",
+      "name": "July 2024 Monsoon Waterlogging",
+      "start_date": "2024-07-01",
+      "end_date": "2024-07-31",
+      "priority": "CRITICAL",
+      "rationale": "July 2024 active monsoon and Old Rajinder Nagar coaching library incident",
+      "acquisition_status": "ACQUIRED_AND_VALIDATED",
+      "source_dataset": "OPEN_METEO_ERA5_LAND",
+      "licensing": "CC-BY-4.0",
+      "spatial_resolution": "0.1\u00b0 (~9 km ERA5-Land grid)",
+      "temporal_resolution": "Hourly",
+      "file_path": "D:\\jalmarg\\jalmarg\\ml\\artifacts\\acquired_data\\delhi_ncr_historical_rainfall_2024-07-01_2024-07-31.json",
+      "file_size_bytes": 4631480,
+      "sha256_checksum": "a61860117359e5567cff4220d50c7fcc3552484d67e76ccb530ae2d3af62bc69",
+      "records_count": 8184,
+      "validation": {
+        "file_name": "delhi_ncr_historical_rainfall_2024-07-01_2024-07-31.json",
+        "total_records": 8184,
+        "corridors_count": 11,
+        "distinct_grid_cells_count": 7,
+        "start_timestamp_utc": "2024-07-01T00:00",
+        "end_timestamp_utc": "2024-07-31T23:00",
+        "coordinate_bounds": {
+          "min_latitude": 28.4296,
+          "max_latitude": 28.6791,
+          "min_longitude": 77.0118,
+          "max_longitude": 77.511,
+          "bounds_valid_delhi_ncr": true
+        },
+        "quality_metrics": {
+          "valid_records": 8184,
+          "missing_records": 0,
+          "negative_records": 0,
+          "duplicate_records": 0,
+          "completeness_percentage": 100.0,
+          "peak_precipitation_mm_per_h": 79.1,
+          "no_silent_zero_fills_enforced": true,
+          "quality_status": "PASSED_QUALITY_CHECKS"
+        }
+      }
+    },
+    {
+      "period_code": "2024_MONSOON_AUG",
+      "name": "August 2024 Monsoon Deluge",
+      "start_date": "2024-08-01",
+      "end_date": "2024-08-31",
+      "priority": "CRITICAL",
+      "rationale": "August 1-2, 2024 widespread Delhi NCR waterlogging & Gazetted hotspots",
+      "acquisition_status": "ACQUIRED_AND_VALIDATED",
+      "source_dataset": "OPEN_METEO_ERA5_LAND",
+      "licensing": "CC-BY-4.0",
+      "spatial_resolution": "0.1\u00b0 (~9 km ERA5-Land grid)",
+      "temporal_resolution": "Hourly",
+      "file_path": "D:\\jalmarg\\jalmarg\\ml\\artifacts\\acquired_data\\delhi_ncr_historical_rainfall_2024-08-01_2024-08-31.json",
+      "file_size_bytes": 4631415,
+      "sha256_checksum": "95b6b878c52e265bfd9481c1985765d036b2be66ab1ba50cc3addd7da87b7621",
+      "records_count": 8184,
+      "validation": {
+        "file_name": "delhi_ncr_historical_rainfall_2024-08-01_2024-08-31.json",
+        "total_records": 8184,
+        "corridors_count": 11,
+        "distinct_grid_cells_count": 7,
+        "start_timestamp_utc": "2024-08-01T00:00",
+        "end_timestamp_utc": "2024-08-31T23:00",
+        "coordinate_bounds": {
+          "min_latitude": 28.4296,
+          "max_latitude": 28.6791,
+          "min_longitude": 77.0118,
+          "max_longitude": 77.511,
+          "bounds_valid_delhi_ncr": true
+        },
+        "quality_metrics": {
+          "valid_records": 8184,
+          "missing_records": 0,
+          "negative_records": 0,
+          "duplicate_records": 0,
+          "completeness_percentage": 100.0,
+          "peak_precipitation_mm_per_h": 16.4,
+          "no_silent_zero_fills_enforced": true,
+          "quality_status": "PASSED_QUALITY_CHECKS"
+        }
+      }
+    },
+    {
+      "period_code": "2024_MONSOON_SEP",
+      "name": "September 2024 Late Monsoon",
+      "start_date": "2024-09-01",
+      "end_date": "2024-09-30",
+      "priority": "MEDIUM",
+      "rationale": "Late monsoon depression rainfall",
+      "acquisition_status": "ACQUIRED_AND_VALIDATED",
+      "source_dataset": "OPEN_METEO_ERA5_LAND",
+      "licensing": "CC-BY-4.0",
+      "spatial_resolution": "0.1\u00b0 (~9 km ERA5-Land grid)",
+      "temporal_resolution": "Hourly",
+      "file_path": "D:\\jalmarg\\jalmarg\\ml\\artifacts\\acquired_data\\delhi_ncr_historical_rainfall_2024-09-01_2024-09-30.json",
+      "file_size_bytes": 4482057,
+      "sha256_checksum": "10564cf198d1e4d9fcfe8c170964234255b18f4bd7cc756fcf0c69620ac7a048",
+      "records_count": 7920,
+      "validation": {
+        "file_name": "delhi_ncr_historical_rainfall_2024-09-01_2024-09-30.json",
+        "total_records": 7920,
+        "corridors_count": 11,
+        "distinct_grid_cells_count": 7,
+        "start_timestamp_utc": "2024-09-01T00:00",
+        "end_timestamp_utc": "2024-09-30T23:00",
+        "coordinate_bounds": {
+          "min_latitude": 28.4296,
+          "max_latitude": 28.6791,
+          "min_longitude": 77.0118,
+          "max_longitude": 77.511,
+          "bounds_valid_delhi_ncr": true
+        },
+        "quality_metrics": {
+          "valid_records": 7920,
+          "missing_records": 0,
+          "negative_records": 0,
+          "duplicate_records": 0,
+          "completeness_percentage": 100.0,
+          "peak_precipitation_mm_per_h": 17.6,
+          "no_silent_zero_fills_enforced": true,
+          "quality_status": "PASSED_QUALITY_CHECKS"
+        }
+      }
+    },
+    {
+      "period_code": "2025_MONSOON",
+      "name": "June-September 2025 Full Monsoon Season",
+      "start_date": "2025-06-01",
+      "end_date": "2025-09-30",
+      "priority": "HIGH",
+      "rationale": "Additional full monsoon season baseline for long-term climatology",
+      "acquisition_status": "ACQUIRED_AND_VALIDATED",
+      "source_dataset": "OPEN_METEO_ERA5_LAND",
+      "licensing": "CC-BY-4.0",
+      "spatial_resolution": "0.1\u00b0 (~9 km ERA5-Land grid)",
+      "temporal_resolution": "Hourly",
+      "file_path": "D:\\jalmarg\\jalmarg\\ml\\artifacts\\acquired_data\\delhi_ncr_historical_rainfall_2025-06-01_2025-09-30.json",
+      "file_size_bytes": 18226851,
+      "sha256_checksum": "96865ad915de3b79d261605d2fe885c21a05c41b38892603f206d82a15e404a3",
+      "records_count": 32208,
+      "validation": {
+        "file_name": "delhi_ncr_historical_rainfall_2025-06-01_2025-09-30.json",
+        "total_records": 32208,
+        "corridors_count": 11,
+        "distinct_grid_cells_count": 7,
+        "start_timestamp_utc": "2025-06-01T00:00",
+        "end_timestamp_utc": "2025-09-30T23:00",
+        "coordinate_bounds": {
+          "min_latitude": 28.4296,
+          "max_latitude": 28.6791,
+          "min_longitude": 77.0118,
+          "max_longitude": 77.511,
+          "bounds_valid_delhi_ncr": true
+        },
+        "quality_metrics": {
+          "valid_records": 32208,
+          "missing_records": 0,
+          "negative_records": 0,
+          "duplicate_records": 0,
+          "completeness_percentage": 100.0,
+          "peak_precipitation_mm_per_h": 19.8,
+          "no_silent_zero_fills_enforced": true,
+          "quality_status": "PASSED_QUALITY_CHECKS"
+        }
+      }
+    },
+    {
+      "period_code": "2026_MONSOON",
+      "name": "June-September 2026 Completed Monsoon Season",
+      "start_date": "2026-06-01",
+      "end_date": "2026-09-30",
+      "priority": "HIGH",
+      "rationale": "Most recent completed monsoon season across Delhi NCR",
+      "acquisition_status": "ACQUIRED_AND_VALIDATED",
+      "source_dataset": "OPEN_METEO_ERA5_LAND",
+      "licensing": "CC-BY-4.0",
+      "spatial_resolution": "0.1\u00b0 (~9 km ERA5-Land grid)",
+      "temporal_resolution": "Hourly",
+      "file_path": "D:\\jalmarg\\jalmarg\\ml\\artifacts\\acquired_data\\delhi_ncr_historical_rainfall_2026-06-01_2026-09-30.json",
+      "file_size_bytes": 18226879,
+      "sha256_checksum": "d862c8f499a19b70ef8146f271f02a939fc67f3ed7f8bf101a12410c3ad97b87",
+      "records_count": 32208,
+      "validation": {
+        "file_name": "delhi_ncr_historical_rainfall_2026-06-01_2026-09-30.json",
+        "total_records": 32208,
+        "corridors_count": 11,
+        "distinct_grid_cells_count": 7,
+        "start_timestamp_utc": "2026-06-01T00:00",
+        "end_timestamp_utc": "2026-09-30T23:00",
+        "coordinate_bounds": {
+          "min_latitude": 28.4296,
+          "max_latitude": 28.6791,
+          "min_longitude": 77.0118,
+          "max_longitude": 77.511,
+          "bounds_valid_delhi_ncr": true
+        },
+        "quality_metrics": {
+          "valid_records": 32208,
+          "missing_records": 0,
+          "negative_records": 0,
+          "duplicate_records": 0,
+          "completeness_percentage": 100.0,
+          "peak_precipitation_mm_per_h": 39.5,
+          "no_silent_zero_fills_enforced": true,
+          "quality_status": "PASSED_QUALITY_CHECKS"
+        }
+      }
+    }
+  ]
+}

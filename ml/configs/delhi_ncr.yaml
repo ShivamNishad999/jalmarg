@@ -1,0 +1,108 @@
+# Delhi NCR Study Area & Bounding Scope Configuration
+# Note: This file explicitly distinguishes the operational intake bounding box
+# from statutory administrative boundaries and actual ML training corridor extents.
+
+scope_definition:
+  study_area_name: "Delhi National Capital Region (NCR) & Monsoonal Priority Corridors"
+  crs:
+    geographic: "EPSG:4326"
+    projected: "EPSG:32643" # WGS 84 / UTM zone 43N (appropriate for Delhi NCR metric distance computations)
+
+spatial_envelopes:
+  # Operational intake bounding box filter (approximate geographic envelope; NOT a statutory boundary)
+  operational_intake_bbox:
+    description: "Operational intake filter envelope for Delhi NCR data ingestion and coordinate plausibility checks"
+    min_latitude: 28.00
+    max_latitude: 29.20
+    min_longitude: 76.50
+    max_longitude: 77.80
+    boundary_type: "APPROXIMATE_OPERATIONAL_FILTER"
+    statutory_boundary: false
+
+  # Application map viewport (used by Leaflet frontend centered on central NCR)
+  application_map_viewport:
+    center_latitude: 28.58
+    center_longitude: 77.25
+    initial_zoom: 11
+    max_bounds:
+      min_latitude: 28.20
+      max_latitude: 29.00
+      min_longitude: 76.70
+      max_longitude: 77.70
+
+  # Authentic Copernicus DEM coverage tile currently present in local storage
+  copernicus_dem_coverage:
+    tile_name: "Copernicus_DSM_COG_10_N28_00_E077_00_DEM.tif"
+    min_latitude: 28.000000000000000
+    max_latitude: 29.000000000000000
+    min_longitude: 77.000000000000000
+    max_longitude: 78.000000000000000
+    resolution_arc_sec: 1.0 # 30m nominal resolution
+    source: "Copernicus WorldDEM / ESA / Airbus Defence and Space"
+    license: "Open Data (Copernicus Sentinel / DEM Licence)"
+
+monitored_corridors:
+  - id: 1
+    name: "Minto Bridge underpass, Connaught Place"
+    area: "Central Delhi"
+    latitude: 28.6347
+    longitude: 77.2263
+    baseline_elevation_m: 214.2
+    vulnerability_tier: "CRITICAL_HOTSPOT"
+    historical_recurrence: true
+  - id: 2
+    name: "Pul Prahladpur underpass, MB Road"
+    area: "South Delhi"
+    latitude: 28.5019
+    longitude: 77.2873
+    baseline_elevation_m: 218.4
+    vulnerability_tier: "CRITICAL_HOTSPOT"
+    historical_recurrence: true
+  - id: 3
+    name: "Hero Honda Chowk, NH-48"
+    area: "Gurugram"
+    latitude: 28.4296
+    longitude: 77.0118
+    baseline_elevation_m: 226.5
+    vulnerability_tier: "HIGH_HOTSPOT"
+    historical_recurrence: true
+  - id: 4
+    name: "Zakhira underpass, Rohtak Road"
+    area: "West Delhi"
+    latitude: 28.6612
+    longitude: 77.1455
+    baseline_elevation_m: 212.8
+    vulnerability_tier: "HIGH_HOTSPOT"
+    historical_recurrence: true
+  - id: 5
+    name: "Azad Market underpass"
+    area: "North Delhi"
+    latitude: 28.6667
+    longitude: 77.2064
+    baseline_elevation_m: 215.1
+    vulnerability_tier: "HIGH_HOTSPOT"
+    historical_recurrence: true
+  - id: 6
+    name: "NH-9 underpass near Sector 62"
+    area: "Noida"
+    latitude: 28.6280
+    longitude: 77.3690
+    baseline_elevation_m: 204.6
+    vulnerability_tier: "MODERATE_HOTSPOT"
+    historical_recurrence: true
+  - id: 7
+    name: "ITO crossing, Vikas Marg"
+    area: "East Delhi"
+    latitude: 28.6289
+    longitude: 77.2410
+    baseline_elevation_m: 209.0
+    vulnerability_tier: "HIGH_HOTSPOT"
+    historical_recurrence: true
+  - id: 8
+    name: "Dhaula Kuan Ridge Junction"
+    area: "New Delhi"
+    latitude: 28.5920
+    longitude: 77.1610
+    baseline_elevation_m: 242.0
+    vulnerability_tier: "LOW_ELEVATION_BENCHMARK"
+    historical_recurrence: false

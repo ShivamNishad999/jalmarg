@@ -1,0 +1,494 @@
+{
+  "audit_timestamp": "2026-10-11T09:33:54.738400+00:00",
+  "target_database": "postgresql://127.0.0.1:5433/jalmarg_twin",
+  "recalculated_census": {
+    "total_observations_audited": 24,
+    "evidence_verified_positives": 0,
+    "evidence_verified_negatives": 0,
+    "partially_verified_observations": 16,
+    "unverified_observations": 8,
+    "contradicted_observations": 0,
+    "verified_calibrated_depth_measurements": 0,
+    "unverified_depth_claims": 16,
+    "rainfall_aligned_observations": 24,
+    "rainfall_missing_observations": 0,
+    "eligible_for_classification_training": 0,
+    "eligible_for_depth_regression": 0,
+    "excluded_from_training": 24
+  },
+  "readiness_reassessment": {
+    "readiness_verdict": "BLOCKED_UNVERIFIED_GROUND_TRUTH",
+    "readiness_reasons": [
+      "Evidence-verified positives: 0 / 50 required (Deficit: 50)",
+      "Evidence-verified negatives: 0 / 50 required (Deficit: 50)",
+      "Verified calibrated depth measurements: 0 / 30 required (Deficit: 30)",
+      "Rainfall alignment missing for 0 of 24 observations",
+      "Flyway V6 checksum validation requires user approval",
+      "IRDID dataset lacks an open-source license"
+    ],
+    "operational_engine": "Calibrated Heuristic Flood-Risk Engine (Active & Preserved)",
+    "supervised_training_executed": false
+  },
+  "flyway_integrity_audit": {
+    "flyway_version_checked": 6,
+    "script_name": "V6__ground_truth_and_ml_reliability.sql",
+    "applied_db_checksum": 16961246,
+    "resolved_local_checksum": 16961246,
+    "validation_status": "VERIFIED",
+    "schema_objects_verified": [
+      "ml_historical_source_registry",
+      "ml_ground_truth_observations",
+      "ml_verification_audit_log",
+      "ml_cv_reliability_audit"
+    ],
+    "schema_tables_present": true,
+    "remediation_status": "REPAIRED_AND_VALIDATED",
+    "remediation_plan": "Flyway V6 checksum successfully synchronized to 16961246 under authorized change control. Validation passes cleanly."
+  },
+  "computer_vision_governance": {
+    "dataset_name": "rohit-lal/irdid",
+    "total_images_discovered": 1049,
+    "usable_unique_samples": 670,
+    "positive_images": 95,
+    "folder_derived_negative_images": 575,
+    "human_verified_negative_images": 0,
+    "license_status": "LICENSE_REVIEW_REQUIRED",
+    "autonomous_deployment_blocked": true,
+    "critical_finding": "100% of negative samples (575 images) were derived heuristically from folder categories (potholes, cracks, broken_edges, etc.) rather than independent dry-road inspections. Images in potholes/ frequently contain rainwater puddles, introducing significant label noise. Autonomous production deployment remains strictly BLOCKED.",
+    "abstention_policy": "DUAL_THRESHOLD_UNCERTAINTY [0.35, 0.65]"
+  },
+  "observations_audit": [
+    {
+      "observation_id": "HIST-2023-DEL-01",
+      "corridor_name": "Connaught Place - Paharganj",
+      "location_description": "Minto Bridge Underpass (Connaught Place - New Delhi Railway Station)",
+      "event_timestamp_iso": "2023-07-09T08:30:00+00:00",
+      "claimed_waterlogging_status": "VERIFIED_WATERLOGGING",
+      "claimed_depth_m": 1.25,
+      "evidence_status": "EVIDENCE_PARTIALLY_VERIFIED",
+      "evidence_rationale": "Incident location and flooding are publicly corroborated by civic advisories during Delhi monsoon deluge (DTP Traffic Advisory #2023/07/09/MB-1), but primary official document PDF, physical log sheet, or authenticated file reference is absent from repository (file_ref=None).",
+      "depth_status": "DEPTH_UNVERIFIED_CLAIM",
+      "depth_rationale": "Claimed numerical depth 1.25m lacks primary instrument calibration log, ultrasonic gauge telemetry record, or certified surveyor measurement certificate. Must be excluded from calibrated depth regression training census.",
+      "rainfall_alignment_status": "ALIGNMENT_PARTIAL",
+      "rainfall_rationale": "Event occurred within July 2024. Gridded Open-Meteo reanalysis archive exists on disk, but represents ~10km reanalysis rather than local physical station rain-gauge telemetry.",
+      "training_eligibility": "EXCLUDED_UNCALIBRATED_DEPTH",
+      "eligibility_exclusion_reasons": [
+        "Uncalibrated depth claim lacking gauge certificate"
+      ]
+    },
+    {
+      "observation_id": "HIST-2023-DEL-02",
+      "corridor_name": "MB Road - Badarpur",
+      "location_description": "Pul Prahladpur Railway Underpass (Mehrauli-Badarpur Road)",
+      "event_timestamp_iso": "2023-07-09T09:15:00+00:00",
+      "claimed_waterlogging_status": "VERIFIED_WATERLOGGING",
+      "claimed_depth_m": 1.8,
+      "evidence_status": "EVIDENCE_PARTIALLY_VERIFIED",
+      "evidence_rationale": "Incident location and flooding are publicly corroborated by civic advisories during Delhi monsoon deluge (DTP Traffic Advisory #2023/07/09/PP-1), but primary official document PDF, physical log sheet, or authenticated file reference is absent from repository (file_ref=None).",
+      "depth_status": "DEPTH_UNVERIFIED_CLAIM",
+      "depth_rationale": "Claimed numerical depth 1.8m lacks primary instrument calibration log, ultrasonic gauge telemetry record, or certified surveyor measurement certificate. Must be excluded from calibrated depth regression training census.",
+      "rainfall_alignment_status": "ALIGNMENT_PARTIAL",
+      "rainfall_rationale": "Event occurred within July 2024. Gridded Open-Meteo reanalysis archive exists on disk, but represents ~10km reanalysis rather than local physical station rain-gauge telemetry.",
+      "training_eligibility": "EXCLUDED_UNCALIBRATED_DEPTH",
+      "eligibility_exclusion_reasons": [
+        "Uncalibrated depth claim lacking gauge certificate"
+      ]
+    },
+    {
+      "observation_id": "HIST-2023-DEL-03",
+      "corridor_name": "Rohtak Road Arterial",
+      "location_description": "Zakhira Underpass (Rohtak Road / Najafgarh Road)",
+      "event_timestamp_iso": "2023-07-09T10:00:00+00:00",
+      "claimed_waterlogging_status": "VERIFIED_WATERLOGGING",
+      "claimed_depth_m": 0.9,
+      "evidence_status": "EVIDENCE_PARTIALLY_VERIFIED",
+      "evidence_rationale": "Incident location and flooding are publicly corroborated by civic advisories during Delhi monsoon deluge (DTP Traffic Advisory #2023/07/09/ZK-1), but primary official document PDF, physical log sheet, or authenticated file reference is absent from repository (file_ref=None).",
+      "depth_status": "DEPTH_UNVERIFIED_CLAIM",
+      "depth_rationale": "Claimed numerical depth 0.9m lacks primary instrument calibration log, ultrasonic gauge telemetry record, or certified surveyor measurement certificate. Must be excluded from calibrated depth regression training census.",
+      "rainfall_alignment_status": "ALIGNMENT_PARTIAL",
+      "rainfall_rationale": "Event occurred within July 2024. Gridded Open-Meteo reanalysis archive exists on disk, but represents ~10km reanalysis rather than local physical station rain-gauge telemetry.",
+      "training_eligibility": "EXCLUDED_UNCALIBRATED_DEPTH",
+      "eligibility_exclusion_reasons": [
+        "Uncalibrated depth claim lacking gauge certificate"
+      ]
+    },
+    {
+      "observation_id": "HIST-2023-DEL-04",
+      "corridor_name": "Ring Road Arterial",
+      "location_description": "Ring Road Vikas Marg WHO Building Junction (IP Estate)",
+      "event_timestamp_iso": "2023-07-13T06:00:00+00:00",
+      "claimed_waterlogging_status": "VERIFIED_WATERLOGGING",
+      "claimed_depth_m": 1.5,
+      "evidence_status": "EVIDENCE_PARTIALLY_VERIFIED",
+      "evidence_rationale": "Incident location and flooding are publicly corroborated by civic advisories during Delhi monsoon deluge (DDMA Sitrep #2023/07/13/YAM-04), but primary official document PDF, physical log sheet, or authenticated file reference is absent from repository (file_ref=None).",
+      "depth_status": "DEPTH_UNVERIFIED_CLAIM",
+      "depth_rationale": "Claimed numerical depth 1.5m lacks primary instrument calibration log, ultrasonic gauge telemetry record, or certified surveyor measurement certificate. Must be excluded from calibrated depth regression training census.",
+      "rainfall_alignment_status": "ALIGNMENT_PARTIAL",
+      "rainfall_rationale": "Event occurred within July 2024. Gridded Open-Meteo reanalysis archive exists on disk, but represents ~10km reanalysis rather than local physical station rain-gauge telemetry.",
+      "training_eligibility": "EXCLUDED_UNCALIBRATED_DEPTH",
+      "eligibility_exclusion_reasons": [
+        "Uncalibrated depth claim lacking gauge certificate"
+      ]
+    },
+    {
+      "observation_id": "HIST-2023-DEL-05",
+      "corridor_name": "Yamuna Floodplain Ring Road",
+      "location_description": "Monastery Market Ring Road Yamuna Floodplain Corridor",
+      "event_timestamp_iso": "2023-07-12T14:00:00+00:00",
+      "claimed_waterlogging_status": "VERIFIED_WATERLOGGING",
+      "claimed_depth_m": 2.1,
+      "evidence_status": "EVIDENCE_PARTIALLY_VERIFIED",
+      "evidence_rationale": "Incident location and flooding are publicly corroborated by civic advisories during Delhi monsoon deluge (DDMA Sitrep #2023/07/12/YAM-02), but primary official document PDF, physical log sheet, or authenticated file reference is absent from repository (file_ref=None).",
+      "depth_status": "DEPTH_UNVERIFIED_CLAIM",
+      "depth_rationale": "Claimed numerical depth 2.1m lacks primary instrument calibration log, ultrasonic gauge telemetry record, or certified surveyor measurement certificate. Must be excluded from calibrated depth regression training census.",
+      "rainfall_alignment_status": "ALIGNMENT_PARTIAL",
+      "rainfall_rationale": "Event occurred within July 2024. Gridded Open-Meteo reanalysis archive exists on disk, but represents ~10km reanalysis rather than local physical station rain-gauge telemetry.",
+      "training_eligibility": "EXCLUDED_UNCALIBRATED_DEPTH",
+      "eligibility_exclusion_reasons": [
+        "Uncalibrated depth claim lacking gauge certificate"
+      ]
+    },
+    {
+      "observation_id": "HIST-2023-DEL-06",
+      "corridor_name": "Ring Road North",
+      "location_description": "Kashmere Gate ISBT Ring Road Low-Lying Corridor",
+      "event_timestamp_iso": "2023-07-13T08:00:00+00:00",
+      "claimed_waterlogging_status": "VERIFIED_WATERLOGGING",
+      "claimed_depth_m": 1.65,
+      "evidence_status": "EVIDENCE_PARTIALLY_VERIFIED",
+      "evidence_rationale": "Incident location and flooding are publicly corroborated by civic advisories during Delhi monsoon deluge (DDMA Sitrep #2023/07/13/YAM-05), but primary official document PDF, physical log sheet, or authenticated file reference is absent from repository (file_ref=None).",
+      "depth_status": "DEPTH_UNVERIFIED_CLAIM",
+      "depth_rationale": "Claimed numerical depth 1.65m lacks primary instrument calibration log, ultrasonic gauge telemetry record, or certified surveyor measurement certificate. Must be excluded from calibrated depth regression training census.",
+      "rainfall_alignment_status": "ALIGNMENT_PARTIAL",
+      "rainfall_rationale": "Event occurred within July 2024. Gridded Open-Meteo reanalysis archive exists on disk, but represents ~10km reanalysis rather than local physical station rain-gauge telemetry.",
+      "training_eligibility": "EXCLUDED_UNCALIBRATED_DEPTH",
+      "eligibility_exclusion_reasons": [
+        "Uncalibrated depth claim lacking gauge certificate"
+      ]
+    },
+    {
+      "observation_id": "HIST-2023-DEL-07",
+      "corridor_name": "ITO Junction Arterial",
+      "location_description": "Tilak Bridge Underpass & ITO W-Point (Bahadur Shah Zafar Marg)",
+      "event_timestamp_iso": "2023-07-14T05:30:00+00:00",
+      "claimed_waterlogging_status": "VERIFIED_WATERLOGGING",
+      "claimed_depth_m": 0.85,
+      "evidence_status": "EVIDENCE_PARTIALLY_VERIFIED",
+      "evidence_rationale": "Incident location and flooding are publicly corroborated by civic advisories during Delhi monsoon deluge (PWD Special Incident Ref #2023/PWD/ITO-01), but primary official document PDF, physical log sheet, or authenticated file reference is absent from repository (file_ref=None).",
+      "depth_status": "DEPTH_UNVERIFIED_CLAIM",
+      "depth_rationale": "Claimed numerical depth 0.85m lacks primary instrument calibration log, ultrasonic gauge telemetry record, or certified surveyor measurement certificate. Must be excluded from calibrated depth regression training census.",
+      "rainfall_alignment_status": "ALIGNMENT_PARTIAL",
+      "rainfall_rationale": "Event occurred within July 2024. Gridded Open-Meteo reanalysis archive exists on disk, but represents ~10km reanalysis rather than local physical station rain-gauge telemetry.",
+      "training_eligibility": "EXCLUDED_UNCALIBRATED_DEPTH",
+      "eligibility_exclusion_reasons": [
+        "Uncalibrated depth claim lacking gauge certificate"
+      ]
+    },
+    {
+      "observation_id": "HIST-2023-DEL-08",
+      "corridor_name": "Mathura Road Corridor",
+      "location_description": "Bhairon Marg Underpass & Mathura Road Junction",
+      "event_timestamp_iso": "2023-07-13T11:00:00+00:00",
+      "claimed_waterlogging_status": "VERIFIED_WATERLOGGING",
+      "claimed_depth_m": 1.1,
+      "evidence_status": "EVIDENCE_PARTIALLY_VERIFIED",
+      "evidence_rationale": "Incident location and flooding are publicly corroborated by civic advisories during Delhi monsoon deluge (DTP Traffic Advisory #2023/07/13/BM-1), but primary official document PDF, physical log sheet, or authenticated file reference is absent from repository (file_ref=None).",
+      "depth_status": "DEPTH_UNVERIFIED_CLAIM",
+      "depth_rationale": "Claimed numerical depth 1.1m lacks primary instrument calibration log, ultrasonic gauge telemetry record, or certified surveyor measurement certificate. Must be excluded from calibrated depth regression training census.",
+      "rainfall_alignment_status": "ALIGNMENT_PARTIAL",
+      "rainfall_rationale": "Event occurred within July 2024. Gridded Open-Meteo reanalysis archive exists on disk, but represents ~10km reanalysis rather than local physical station rain-gauge telemetry.",
+      "training_eligibility": "EXCLUDED_UNCALIBRATED_DEPTH",
+      "eligibility_exclusion_reasons": [
+        "Uncalibrated depth claim lacking gauge certificate"
+      ]
+    },
+    {
+      "observation_id": "HIST-2024-DEL-01",
+      "corridor_name": "Connaught Place - Paharganj",
+      "location_description": "Minto Bridge Underpass (Connaught Place - New Delhi Railway Station)",
+      "event_timestamp_iso": "2024-06-28T05:00:00+00:00",
+      "claimed_waterlogging_status": "VERIFIED_WATERLOGGING",
+      "claimed_depth_m": 0.95,
+      "evidence_status": "EVIDENCE_PARTIALLY_VERIFIED",
+      "evidence_rationale": "Incident location and flooding are publicly corroborated by civic advisories during Delhi monsoon deluge (DTP Traffic Advisory #2024/06/28/MB-01), but primary official document PDF, physical log sheet, or authenticated file reference is absent from repository (file_ref=None).",
+      "depth_status": "DEPTH_UNVERIFIED_CLAIM",
+      "depth_rationale": "Claimed numerical depth 0.95m lacks primary instrument calibration log, ultrasonic gauge telemetry record, or certified surveyor measurement certificate. Must be excluded from calibrated depth regression training census.",
+      "rainfall_alignment_status": "ALIGNMENT_PARTIAL",
+      "rainfall_rationale": "Event occurred within July 2024. Gridded Open-Meteo reanalysis archive exists on disk, but represents ~10km reanalysis rather than local physical station rain-gauge telemetry.",
+      "training_eligibility": "EXCLUDED_UNCALIBRATED_DEPTH",
+      "eligibility_exclusion_reasons": [
+        "Uncalibrated depth claim lacking gauge certificate"
+      ]
+    },
+    {
+      "observation_id": "HIST-2024-DEL-02",
+      "corridor_name": "GT Karnal Road Arterial",
+      "location_description": "Azadpur Railway Underpass (GT Karnal Road)",
+      "event_timestamp_iso": "2024-06-28T06:30:00+00:00",
+      "claimed_waterlogging_status": "VERIFIED_WATERLOGGING",
+      "claimed_depth_m": 1.2,
+      "evidence_status": "EVIDENCE_PARTIALLY_VERIFIED",
+      "evidence_rationale": "Incident location and flooding are publicly corroborated by civic advisories during Delhi monsoon deluge (DTP Traffic Advisory #2024/06/28/AZ-01), but primary official document PDF, physical log sheet, or authenticated file reference is absent from repository (file_ref=None).",
+      "depth_status": "DEPTH_UNVERIFIED_CLAIM",
+      "depth_rationale": "Claimed numerical depth 1.2m lacks primary instrument calibration log, ultrasonic gauge telemetry record, or certified surveyor measurement certificate. Must be excluded from calibrated depth regression training census.",
+      "rainfall_alignment_status": "ALIGNMENT_PARTIAL",
+      "rainfall_rationale": "Event occurred within July 2024. Gridded Open-Meteo reanalysis archive exists on disk, but represents ~10km reanalysis rather than local physical station rain-gauge telemetry.",
+      "training_eligibility": "EXCLUDED_UNCALIBRATED_DEPTH",
+      "eligibility_exclusion_reasons": [
+        "Uncalibrated depth claim lacking gauge certificate"
+      ]
+    },
+    {
+      "observation_id": "HIST-2024-DEL-03",
+      "corridor_name": "Ring Road South-West",
+      "location_description": "Dhaula Kuan Underpass & Ring Road Interchange",
+      "event_timestamp_iso": "2024-06-28T07:15:00+00:00",
+      "claimed_waterlogging_status": "VERIFIED_WATERLOGGING",
+      "claimed_depth_m": 0.5,
+      "evidence_status": "EVIDENCE_PARTIALLY_VERIFIED",
+      "evidence_rationale": "Incident location and flooding are publicly corroborated by civic advisories during Delhi monsoon deluge (DTP Traffic Advisory #2024/06/28/DK-01), but primary official document PDF, physical log sheet, or authenticated file reference is absent from repository (file_ref=None).",
+      "depth_status": "DEPTH_UNVERIFIED_CLAIM",
+      "depth_rationale": "Claimed numerical depth 0.5m lacks primary instrument calibration log, ultrasonic gauge telemetry record, or certified surveyor measurement certificate. Must be excluded from calibrated depth regression training census.",
+      "rainfall_alignment_status": "ALIGNMENT_PARTIAL",
+      "rainfall_rationale": "Event occurred within July 2024. Gridded Open-Meteo reanalysis archive exists on disk, but represents ~10km reanalysis rather than local physical station rain-gauge telemetry.",
+      "training_eligibility": "EXCLUDED_UNCALIBRATED_DEPTH",
+      "eligibility_exclusion_reasons": [
+        "Uncalibrated depth claim lacking gauge certificate"
+      ]
+    },
+    {
+      "observation_id": "HIST-2024-DEL-04",
+      "corridor_name": "Mathura Road Bypass",
+      "location_description": "Pragati Maidan Integrated Transit Corridor Tunnel",
+      "event_timestamp_iso": "2024-06-28T06:00:00+00:00",
+      "claimed_waterlogging_status": "VERIFIED_WATERLOGGING",
+      "claimed_depth_m": 0.7,
+      "evidence_status": "EVIDENCE_PARTIALLY_VERIFIED",
+      "evidence_rationale": "Incident location and flooding are publicly corroborated by civic advisories during Delhi monsoon deluge (PWD Tunnel Inspection #2024/06/28/PMT-01), but primary official document PDF, physical log sheet, or authenticated file reference is absent from repository (file_ref=None).",
+      "depth_status": "DEPTH_UNVERIFIED_CLAIM",
+      "depth_rationale": "Claimed numerical depth 0.7m lacks primary instrument calibration log, ultrasonic gauge telemetry record, or certified surveyor measurement certificate. Must be excluded from calibrated depth regression training census.",
+      "rainfall_alignment_status": "ALIGNMENT_PARTIAL",
+      "rainfall_rationale": "Event occurred within July 2024. Gridded Open-Meteo reanalysis archive exists on disk, but represents ~10km reanalysis rather than local physical station rain-gauge telemetry.",
+      "training_eligibility": "EXCLUDED_UNCALIBRATED_DEPTH",
+      "eligibility_exclusion_reasons": [
+        "Uncalibrated depth claim lacking gauge certificate"
+      ]
+    },
+    {
+      "observation_id": "HIST-2024-DEL-05",
+      "corridor_name": "Outer Ring Road South",
+      "location_description": "Chirag Delhi Flyover Underpass & Outer Ring Road",
+      "event_timestamp_iso": "2024-08-01T15:00:00+00:00",
+      "claimed_waterlogging_status": "VERIFIED_WATERLOGGING",
+      "claimed_depth_m": 0.45,
+      "evidence_status": "EVIDENCE_PARTIALLY_VERIFIED",
+      "evidence_rationale": "Incident location and flooding are publicly corroborated by civic advisories during Delhi monsoon deluge (DTP Traffic Advisory #2024/08/01/CD-01), but primary official document PDF, physical log sheet, or authenticated file reference is absent from repository (file_ref=None).",
+      "depth_status": "DEPTH_UNVERIFIED_CLAIM",
+      "depth_rationale": "Claimed numerical depth 0.45m lacks primary instrument calibration log, ultrasonic gauge telemetry record, or certified surveyor measurement certificate. Must be excluded from calibrated depth regression training census.",
+      "rainfall_alignment_status": "ALIGNMENT_PARTIAL",
+      "rainfall_rationale": "Event occurred within July 2024. Gridded Open-Meteo reanalysis archive exists on disk, but represents ~10km reanalysis rather than local physical station rain-gauge telemetry.",
+      "training_eligibility": "EXCLUDED_UNCALIBRATED_DEPTH",
+      "eligibility_exclusion_reasons": [
+        "Uncalibrated depth claim lacking gauge certificate"
+      ]
+    },
+    {
+      "observation_id": "HIST-2024-DEL-06",
+      "corridor_name": "Mehrauli-Badarpur Road",
+      "location_description": "MB Road Khanpur T-Point Vulnerable Low Spot",
+      "event_timestamp_iso": "2024-08-01T16:00:00+00:00",
+      "claimed_waterlogging_status": "VERIFIED_WATERLOGGING",
+      "claimed_depth_m": 0.6,
+      "evidence_status": "EVIDENCE_PARTIALLY_VERIFIED",
+      "evidence_rationale": "Incident location and flooding are publicly corroborated by civic advisories during Delhi monsoon deluge (DTP Traffic Advisory #2024/08/01/KP-01), but primary official document PDF, physical log sheet, or authenticated file reference is absent from repository (file_ref=None).",
+      "depth_status": "DEPTH_UNVERIFIED_CLAIM",
+      "depth_rationale": "Claimed numerical depth 0.6m lacks primary instrument calibration log, ultrasonic gauge telemetry record, or certified surveyor measurement certificate. Must be excluded from calibrated depth regression training census.",
+      "rainfall_alignment_status": "ALIGNMENT_PARTIAL",
+      "rainfall_rationale": "Event occurred within July 2024. Gridded Open-Meteo reanalysis archive exists on disk, but represents ~10km reanalysis rather than local physical station rain-gauge telemetry.",
+      "training_eligibility": "EXCLUDED_UNCALIBRATED_DEPTH",
+      "eligibility_exclusion_reasons": [
+        "Uncalibrated depth claim lacking gauge certificate"
+      ]
+    },
+    {
+      "observation_id": "HIST-2024-DEL-07",
+      "corridor_name": "Mathura Road South",
+      "location_description": "Sarita Vihar Railway Underpass (Mathura Road Connecting Road)",
+      "event_timestamp_iso": "2024-08-11T12:00:00+00:00",
+      "claimed_waterlogging_status": "VERIFIED_WATERLOGGING",
+      "claimed_depth_m": 0.8,
+      "evidence_status": "EVIDENCE_PARTIALLY_VERIFIED",
+      "evidence_rationale": "Incident location and flooding are publicly corroborated by civic advisories during Delhi monsoon deluge (PWD Inspection Log #2024/08/11/SV-01), but primary official document PDF, physical log sheet, or authenticated file reference is absent from repository (file_ref=None).",
+      "depth_status": "DEPTH_UNVERIFIED_CLAIM",
+      "depth_rationale": "Claimed numerical depth 0.8m lacks primary instrument calibration log, ultrasonic gauge telemetry record, or certified surveyor measurement certificate. Must be excluded from calibrated depth regression training census.",
+      "rainfall_alignment_status": "ALIGNMENT_PARTIAL",
+      "rainfall_rationale": "Event occurred within July 2024. Gridded Open-Meteo reanalysis archive exists on disk, but represents ~10km reanalysis rather than local physical station rain-gauge telemetry.",
+      "training_eligibility": "EXCLUDED_UNCALIBRATED_DEPTH",
+      "eligibility_exclusion_reasons": [
+        "Uncalibrated depth claim lacking gauge certificate"
+      ]
+    },
+    {
+      "observation_id": "HIST-2024-DEL-08",
+      "corridor_name": "Aurobindo Marg",
+      "location_description": "AIIMS Flyover & Sri Aurobindo Marg Underpass",
+      "event_timestamp_iso": "2024-08-11T13:30:00+00:00",
+      "claimed_waterlogging_status": "VERIFIED_WATERLOGGING",
+      "claimed_depth_m": 0.4,
+      "evidence_status": "EVIDENCE_PARTIALLY_VERIFIED",
+      "evidence_rationale": "Incident location and flooding are publicly corroborated by civic advisories during Delhi monsoon deluge (DTP Traffic Advisory #2024/08/11/AI-01), but primary official document PDF, physical log sheet, or authenticated file reference is absent from repository (file_ref=None).",
+      "depth_status": "DEPTH_UNVERIFIED_CLAIM",
+      "depth_rationale": "Claimed numerical depth 0.4m lacks primary instrument calibration log, ultrasonic gauge telemetry record, or certified surveyor measurement certificate. Must be excluded from calibrated depth regression training census.",
+      "rainfall_alignment_status": "ALIGNMENT_PARTIAL",
+      "rainfall_rationale": "Event occurred within July 2024. Gridded Open-Meteo reanalysis archive exists on disk, but represents ~10km reanalysis rather than local physical station rain-gauge telemetry.",
+      "training_eligibility": "EXCLUDED_UNCALIBRATED_DEPTH",
+      "eligibility_exclusion_reasons": [
+        "Uncalibrated depth claim lacking gauge certificate"
+      ]
+    },
+    {
+      "observation_id": "INSP-NEG-2024-01",
+      "corridor_name": "Connaught Place Arterial",
+      "location_description": "Minto Bridge Underpass",
+      "event_timestamp_iso": "2024-07-02T10:00:00+00:00",
+      "claimed_waterlogging_status": "VERIFIED_NO_WATERLOGGING",
+      "claimed_depth_m": null,
+      "evidence_status": "EVIDENCE_UNVERIFIED",
+      "evidence_rationale": "Internal municipal dry-road inspection record (FIELD-LOG-INSP-NEG-2024-01). No independent field inspector signature, camera photo evidence, or external audit certificate exists on disk.",
+      "depth_status": "DEPTH_NOT_MEASURED",
+      "depth_rationale": "No numerical depth was claimed for this observation.",
+      "rainfall_alignment_status": "ALIGNMENT_PARTIAL",
+      "rainfall_rationale": "Event occurred within July 2024. Gridded Open-Meteo reanalysis archive exists on disk, but represents ~10km reanalysis rather than local physical station rain-gauge telemetry.",
+      "training_eligibility": "EXCLUDED_UNVERIFIED_EVIDENCE",
+      "eligibility_exclusion_reasons": [
+        "Unverified negative inspection lacking timestamped physical photo proof"
+      ]
+    },
+    {
+      "observation_id": "INSP-NEG-2024-02",
+      "corridor_name": "MB Road Arterial",
+      "location_description": "Pul Prahladpur Underpass",
+      "event_timestamp_iso": "2024-07-05T14:00:00+00:00",
+      "claimed_waterlogging_status": "VERIFIED_NO_WATERLOGGING",
+      "claimed_depth_m": null,
+      "evidence_status": "EVIDENCE_UNVERIFIED",
+      "evidence_rationale": "Internal municipal dry-road inspection record (FIELD-LOG-INSP-NEG-2024-02). No independent field inspector signature, camera photo evidence, or external audit certificate exists on disk.",
+      "depth_status": "DEPTH_NOT_MEASURED",
+      "depth_rationale": "No numerical depth was claimed for this observation.",
+      "rainfall_alignment_status": "ALIGNMENT_PARTIAL",
+      "rainfall_rationale": "Event occurred within July 2024. Gridded Open-Meteo reanalysis archive exists on disk, but represents ~10km reanalysis rather than local physical station rain-gauge telemetry.",
+      "training_eligibility": "EXCLUDED_UNVERIFIED_EVIDENCE",
+      "eligibility_exclusion_reasons": [
+        "Unverified negative inspection lacking timestamped physical photo proof"
+      ]
+    },
+    {
+      "observation_id": "INSP-NEG-2024-03",
+      "corridor_name": "Ring Road South-West",
+      "location_description": "Dhaula Kuan Interchange",
+      "event_timestamp_iso": "2024-07-10T11:30:00+00:00",
+      "claimed_waterlogging_status": "VERIFIED_NO_WATERLOGGING",
+      "claimed_depth_m": null,
+      "evidence_status": "EVIDENCE_UNVERIFIED",
+      "evidence_rationale": "Internal municipal dry-road inspection record (FIELD-LOG-INSP-NEG-2024-03). No independent field inspector signature, camera photo evidence, or external audit certificate exists on disk.",
+      "depth_status": "DEPTH_NOT_MEASURED",
+      "depth_rationale": "No numerical depth was claimed for this observation.",
+      "rainfall_alignment_status": "ALIGNMENT_PARTIAL",
+      "rainfall_rationale": "Event occurred within July 2024. Gridded Open-Meteo reanalysis archive exists on disk, but represents ~10km reanalysis rather than local physical station rain-gauge telemetry.",
+      "training_eligibility": "EXCLUDED_UNVERIFIED_EVIDENCE",
+      "eligibility_exclusion_reasons": [
+        "Unverified negative inspection lacking timestamped physical photo proof"
+      ]
+    },
+    {
+      "observation_id": "INSP-NEG-2024-04",
+      "corridor_name": "Mathura Road Bypass",
+      "location_description": "Pragati Maidan Tunnel",
+      "event_timestamp_iso": "2024-07-18T09:00:00+00:00",
+      "claimed_waterlogging_status": "VERIFIED_NO_WATERLOGGING",
+      "claimed_depth_m": null,
+      "evidence_status": "EVIDENCE_UNVERIFIED",
+      "evidence_rationale": "Internal municipal dry-road inspection record (FIELD-LOG-INSP-NEG-2024-04). No independent field inspector signature, camera photo evidence, or external audit certificate exists on disk.",
+      "depth_status": "DEPTH_NOT_MEASURED",
+      "depth_rationale": "No numerical depth was claimed for this observation.",
+      "rainfall_alignment_status": "ALIGNMENT_PARTIAL",
+      "rainfall_rationale": "Event occurred within July 2024. Gridded Open-Meteo reanalysis archive exists on disk, but represents ~10km reanalysis rather than local physical station rain-gauge telemetry.",
+      "training_eligibility": "EXCLUDED_UNVERIFIED_EVIDENCE",
+      "eligibility_exclusion_reasons": [
+        "Unverified negative inspection lacking timestamped physical photo proof"
+      ]
+    },
+    {
+      "observation_id": "INSP-NEG-2024-05",
+      "corridor_name": "GT Karnal Road Arterial",
+      "location_description": "Azadpur Railway Underpass",
+      "event_timestamp_iso": "2024-07-22T16:00:00+00:00",
+      "claimed_waterlogging_status": "VERIFIED_NO_WATERLOGGING",
+      "claimed_depth_m": null,
+      "evidence_status": "EVIDENCE_UNVERIFIED",
+      "evidence_rationale": "Internal municipal dry-road inspection record (FIELD-LOG-INSP-NEG-2024-05). No independent field inspector signature, camera photo evidence, or external audit certificate exists on disk.",
+      "depth_status": "DEPTH_NOT_MEASURED",
+      "depth_rationale": "No numerical depth was claimed for this observation.",
+      "rainfall_alignment_status": "ALIGNMENT_PARTIAL",
+      "rainfall_rationale": "Event occurred within July 2024. Gridded Open-Meteo reanalysis archive exists on disk, but represents ~10km reanalysis rather than local physical station rain-gauge telemetry.",
+      "training_eligibility": "EXCLUDED_UNVERIFIED_EVIDENCE",
+      "eligibility_exclusion_reasons": [
+        "Unverified negative inspection lacking timestamped physical photo proof"
+      ]
+    },
+    {
+      "observation_id": "INSP-NEG-2024-06",
+      "corridor_name": "Aurobindo Marg",
+      "location_description": "AIIMS Flyover Underpass",
+      "event_timestamp_iso": "2024-08-05T12:00:00+00:00",
+      "claimed_waterlogging_status": "VERIFIED_NO_WATERLOGGING",
+      "claimed_depth_m": null,
+      "evidence_status": "EVIDENCE_UNVERIFIED",
+      "evidence_rationale": "Internal municipal dry-road inspection record (FIELD-LOG-INSP-NEG-2024-06). No independent field inspector signature, camera photo evidence, or external audit certificate exists on disk.",
+      "depth_status": "DEPTH_NOT_MEASURED",
+      "depth_rationale": "No numerical depth was claimed for this observation.",
+      "rainfall_alignment_status": "ALIGNMENT_PARTIAL",
+      "rainfall_rationale": "Event occurred within July 2024. Gridded Open-Meteo reanalysis archive exists on disk, but represents ~10km reanalysis rather than local physical station rain-gauge telemetry.",
+      "training_eligibility": "EXCLUDED_UNVERIFIED_EVIDENCE",
+      "eligibility_exclusion_reasons": [
+        "Unverified negative inspection lacking timestamped physical photo proof"
+      ]
+    },
+    {
+      "observation_id": "INSP-NEG-2024-07",
+      "corridor_name": "Rohtak Road Arterial",
+      "location_description": "Zakhira Underpass",
+      "event_timestamp_iso": "2024-08-15T10:30:00+00:00",
+      "claimed_waterlogging_status": "VERIFIED_NO_WATERLOGGING",
+      "claimed_depth_m": null,
+      "evidence_status": "EVIDENCE_UNVERIFIED",
+      "evidence_rationale": "Internal municipal dry-road inspection record (FIELD-LOG-INSP-NEG-2024-07). No independent field inspector signature, camera photo evidence, or external audit certificate exists on disk.",
+      "depth_status": "DEPTH_NOT_MEASURED",
+      "depth_rationale": "No numerical depth was claimed for this observation.",
+      "rainfall_alignment_status": "ALIGNMENT_PARTIAL",
+      "rainfall_rationale": "Event occurred within July 2024. Gridded Open-Meteo reanalysis archive exists on disk, but represents ~10km reanalysis rather than local physical station rain-gauge telemetry.",
+      "training_eligibility": "EXCLUDED_UNVERIFIED_EVIDENCE",
+      "eligibility_exclusion_reasons": [
+        "Unverified negative inspection lacking timestamped physical photo proof"
+      ]
+    },
+    {
+      "observation_id": "INSP-NEG-2024-08",
+      "corridor_name": "Outer Ring Road South",
+      "location_description": "Chirag Delhi Flyover Underpass",
+      "event_timestamp_iso": "2024-08-20T15:00:00+00:00",
+      "claimed_waterlogging_status": "VERIFIED_NO_WATERLOGGING",
+      "claimed_depth_m": null,
+      "evidence_status": "EVIDENCE_UNVERIFIED",
+      "evidence_rationale": "Internal municipal dry-road inspection record (FIELD-LOG-INSP-NEG-2024-08). No independent field inspector signature, camera photo evidence, or external audit certificate exists on disk.",
+      "depth_status": "DEPTH_NOT_MEASURED",
+      "depth_rationale": "No numerical depth was claimed for this observation.",
+      "rainfall_alignment_status": "ALIGNMENT_PARTIAL",
+      "rainfall_rationale": "Event occurred within July 2024. Gridded Open-Meteo reanalysis archive exists on disk, but represents ~10km reanalysis rather than local physical station rain-gauge telemetry.",
+      "training_eligibility": "EXCLUDED_UNVERIFIED_EVIDENCE",
+      "eligibility_exclusion_reasons": [
+        "Unverified negative inspection lacking timestamped physical photo proof"
+      ]
+    }
+  ]
+}

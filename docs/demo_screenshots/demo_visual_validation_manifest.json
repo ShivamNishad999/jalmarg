@@ -1,0 +1,72 @@
+[
+  {
+    "page": "home_map",
+    "route": "/",
+    "viewport": "desktop_1366x768",
+    "dimensions": "1366x768",
+    "screenshot": "home_map_desktop_1366x768.png",
+    "fileSizeKb": "104.9",
+    "domMarkersVerified": true,
+    "status": "SUCCESS"
+  },
+  {
+    "page": "home_map",
+    "route": "/",
+    "viewport": "mobile_390x844",
+    "dimensions": "390x844",
+    "screenshot": "home_map_mobile_390x844.png",
+    "fileSizeKb": "58.1",
+    "domMarkersVerified": true,
+    "status": "SUCCESS"
+  },
+  {
+    "page": "home_map",
+    "route": "/",
+    "viewport": "mobile_360x800",
+    "dimensions": "360x800",
+    "screenshot": "home_map_mobile_360x800.png",
+    "fileSizeKb": "66.4",
+    "domMarkersVerified": true,
+    "status": "SUCCESS"
+  },
+  {
+    "page": "route_planner",
+    "route": "/route",
+    "viewport": "tablet_768x1024",
+    "dimensions": "768x1024",
+    "screenshot": "route_planner_tablet_768x1024.png",
+    "fileSizeKb": "63.5",
+    "domMarkersVerified": false,
+    "status": "SUCCESS"
+  },
+  {
+    "page": "route_planner",
+    "route": "/route",
+    "viewport": "mobile_390x844",
+    "dimensions": "390x844",
+    "screenshot": "route_planner_mobile_390x844.png",
+    "fileSizeKb": "37.0",
+    "domMarkersVerified": false,
+    "status": "SUCCESS"
+  },
+  {
+    "page": "authority_console",
+    "route": "/authority",
+    "viewport": "desktop_1366x768",
+    "dimensions": "1366x768",
+    "screenshot": "authority_console_desktop_1366x768.png",
+    "fileSizeKb": "121.6",
+    "domMarkersVerified": true,
+    "status": "SUCCESS"
+  },
+  {
+    "page": "authority_console",
+    "route": "/authority",
+    "viewport": "tablet_768x1024",
+    "dimensions": "768x1024",
+    "screenshot": "authority_console_tablet_768x1024.png",
+    "fileSizeKb": "108.4",
+    "domMarkersVerified": true,
+    "status": "SUCCESS"
+  }
+]

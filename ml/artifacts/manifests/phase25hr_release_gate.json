@@ -1,0 +1,112 @@
+{
+  "gate_version": "2026.1-PHASE25HR",
+  "evaluated_at_utc": "2026-10-11T11:24:00Z",
+  "auditor_role": "Independent Release Auditor, PostgreSQL/PostGIS DBA, DevSecOps Lead",
+  "primary_release_verdict": "READY_FOR_LIMITED_PILOT",
+  "operational_environment": {
+    "system_name": "JalMarg Municipal Flood Digital Twin",
+    "project_root": "D:\\jalmarg\\jalmarg",
+    "os": "Windows Server / Workstation (64-bit)",
+    "database_target": "127.0.0.1:5433/jalmarg_twin",
+    "carsync_port_5432_isolation": "CONFIRMED_STRICTLY_ISOLATED"
+  },
+  "gates": {
+    "database_isolation": {
+      "status": "PASSED",
+      "target_host": "127.0.0.1",
+      "target_port": 5433,
+      "database_name": "jalmarg_twin",
+      "engine": "PostgreSQL 17.11 / PostGIS 3.6.2",
+      "prohibited_port_5432_accessed": false,
+      "evidence": "psql connection tests, zero connections to 5432"
+    },
+    "flyway_migration_integrity": {
+      "status": "PASSED",
+      "applied_versions": ["V1", "V2", "V3", "V4", "V5", "V6", "V7"],
+      "pending_migrations_count": 0,
+      "schema_validation_mode": "validate",
+      "evidence": "DbValidate 8 migrations validated in 0.051s with 100% checksum match"
+    },
+    "password_security_and_credential_lifecycle": {
+      "status": "PASSED",
+      "hashing_algorithm": "BCrypt (cost factor 12)",
+      "legacy_sha256_migration": "Automatic transparent upgrade on authenticated login",
+      "change_password_endpoint": "POST /api/v1/auth/change-password",
+      "session_invalidation_on_change": true,
+      "plaintext_passwords_logged": false,
+      "evidence": "MunicipalAuthenticationAndRbacTest (9/9 passed), verified live login & change cycle"
+    },
+    "disaster_recovery_and_restore": {
+      "status": "PASSED",
+      "backup_archive_path": "backups/jalmarg_twin_backup_20261011_163156.sql",
+      "archive_size_bytes": 204905,
+      "archive_format": "PostgreSQL Custom Format (-F c, pg_dump 17.11)",
+      "archive_sha256": "0AAC73852CCFB5EDA2FA8C795A349DD91A12254E567DA79952C06144C5FB73B2",
+      "toc_entries_count": 311,
+      "isolated_restore_executed": true,
+      "scratch_database": "jalmarg_restore_test_25hr",
+      "postgis_functionality_verified": true,
+      "restored_row_counts_verified": {
+        "flyway_schema_history": 7,
+        "twin_municipal_users": 3,
+        "reports": 199,
+        "twin_report_observations": 6,
+        "twin_municipal_incidents": 2,
+        "twin_drainage_assets": 8,
+        "twin_road_segments": 12,
+        "twin_audit_events": 47,
+        "ml_rainfall_coverage_manifest": 10
+      },
+      "original_database_unmodified": true,
+      "evidence": "docs/PHASE25HR_BACKUP_RESTORE_VALIDATION.md"
+    },
+    "historical_rainfall_dataset_reconciliation": {
+      "status": "PASSED",
+      "inventory_manifest": "ml/artifacts/manifests/phase25hr_verified_rainfall_inventory.json",
+      "total_files_count": 10,
+      "actual_file_format": "JSON",
+      "temporal_coverage": "2023-06-01 to 2026-09-30 (4 monsoon seasons)",
+      "corridor_hours_records_count": 128832,
+      "unique_grid_cell_hours_count": 81984,
+      "distinct_grid_cells_count": 7,
+      "monitored_corridors_count": 11,
+      "missing_records_count": 0,
+      "source_provenance": "ECMWF ERA5-Land Reanalysis (Open-Meteo Archive, CC-BY-4.0)",
+      "evidence": "10/10 SHA-256 manifest hash verification, verified_rainfall_inventory.json"
+    },
+    "public_health_observability_hardening": {
+      "status": "PASSED",
+      "public_liveness_endpoint": "/api/health",
+      "public_info_disclosure": "NONE (minimal status UP/DOWN, zero database or flyway leakage)",
+      "protected_diagnostics_endpoint": "/api/v1/health/diagnostics",
+      "diagnostics_authorization_enforced": true,
+      "evidence": "HealthControllerTest (2/2 passed)"
+    },
+    "supervised_ml_training_gate": {
+      "status": "BLOCKED_UNVERIFIED_GROUND_TRUTH",
+      "verified_flood_positives": 0,
+      "verified_flood_positives_required": 50,
+      "verified_dry_road_negatives": 0,
+      "verified_dry_road_negatives_required": 50,
+      "calibrated_depth_measurements": 0,
+      "calibrated_depth_measurements_required": 30,
+      "policy": "Supervised flood predictive ML strictly blocked; operational heuristic risk engine active"
+    },
+    "computer_vision_gate": {
+      "status": "BLOCKED_LICENSING",
+      "vision_enabled_default": false,
+      "abstention_policy_interval": "[0.35, 0.65]",
+      "policy": "Model weights withheld from public distribution; zero autonomous municipal verification"
+    },
+    "automated_regression_testing": {
+      "status": "PASSED",
+      "backend_maven_tests": 123,
+      "python_pytest_tests": 44,
+      "frontend_node_tests": 51,
+      "total_tests_executed": 218,
+      "total_tests_passed": 218,
+      "total_failures": 0,
+      "pass_rate_percentage": 100.0
+    }
+  }
+}

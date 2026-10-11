@@ -1,0 +1,29 @@
+{
+  "readiness_gate": "PARTIALLY_READY",
+  "usable_positive_events": 16,
+  "usable_negative_observations": 8,
+  "monsoon_seasons_covered": 2,
+  "class_imbalance_ratio": "2.0:1",
+  "depth_measurement_availability": "INSUFFICIENT (16/30 samples)",
+  "target_lead_times_supported": [
+    "1h",
+    "3h",
+    "6h"
+  ],
+  "target_leakage_risks_found": 0,
+  "missing_requirements": [
+    "Insufficient verified positive waterlogging events (16 available; minimum 50 required).",
+    "Insufficient verified negative observations (8 available; minimum 50 required). Unassessed or clear locations cannot be synthetically labeled as negative without evidence.",
+    "Water-depth regression is BLOCKED (16 measured depth readings; minimum 30 required)."
+  ],
+  "actionable_gap_report": {
+    "verified_positives_deficit": 34,
+    "verified_negatives_deficit": 42,
+    "unverified_pending_reports": 0,
+    "monsoon_seasons_deficit": 0,
+    "depth_regression_status": "BLOCKED",
+    "interim_recommendation": "Continue operating the Phase 22 calibrated heuristic flood-risk engine. Collect and verify crowd reports during upcoming monsoon seasons to expand the ground-truth ledger."
+  },
+  "summary_notes": "Training foundation is PARTIALLY READY for exploratory prototyping, but production supervised training is withheld pending additional monsoon seasons (2/2) and verified events (16/50).",
+  "assessed_at": "2026-10-11T08:07:45.089268+00:00"
+}
