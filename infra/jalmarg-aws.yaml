@@ -1,0 +1,408 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  JalMarg on AWS - Spring Boot API + web app on EC2 (Amazon Corretto 21), HTTPS through
+  CloudFront, report photos in S3, alerts with SNS, hourly alert run with EventBridge,
+  AI depth estimation with Amazon Bedrock. Deploy in ap-south-1 (Mumbai).
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label: { default: 'Admin account (signs in without an email code)' }
+        Parameters: [AdminEmail, AdminPassword]
+      - Label: { default: 'Email for sign-up codes (Gmail app password or Amazon SES SMTP)' }
+        Parameters: [MailHost, MailPort, MailUsername, MailPassword, MailFrom]
+      - Label: { default: 'App settings' }
+        Parameters: [AiEnabled, SeedDemoData, AlertRunKey, InstanceType, ReleaseBaseUrl]
+    ParameterLabels:
+      AdminEmail: { default: 'Admin email' }
+      AdminPassword: { default: 'Admin password' }
+      MailHost: { default: 'SMTP host' }
+      MailPort: { default: 'SMTP port' }
+      MailUsername: { default: 'SMTP username' }
+      MailPassword: { default: 'SMTP password' }
+      MailFrom: { default: 'From address' }
+      AiEnabled: { default: 'Use Amazon Bedrock for AI depth' }
+      SeedDemoData: { default: 'Load labelled demo reports' }
+      AlertRunKey: { default: 'Alert run key' }
+
+Parameters:
+  AdminEmail:
+    Type: String
+    Description: This email becomes an ADMIN account at start-up (no email code needed). Use it to make authority users.
+    AllowedPattern: '^[^@\s]+@[^@\s]+\.[^@\s]+$'
+    ConstraintDescription: Must be an email address.
+  AdminPassword:
+    Type: String
+    NoEcho: true
+    MinLength: 10
+    Description: At least 10 characters, letters and digits. Do not use quotes, backslash, $ or backtick.
+    AllowedPattern: '^[^"\\$`]+$'
+    ConstraintDescription: At least 10 characters; no quotes, backslash, $ or backtick.
+  MailHost:
+    Type: String
+    Default: smtp.gmail.com
+    Description: smtp.gmail.com for a Gmail app password, or email-smtp.ap-south-1.amazonaws.com for Amazon SES.
+  MailPort:
+    Type: Number
+    Default: 587
+  MailUsername:
+    Type: String
+    Description: Gmail address, or the SES SMTP username. Leave empty to turn sign-up emails off (admin can still sign in).
+    Default: ''
+  MailPassword:
+    Type: String
+    NoEcho: true
+    Default: ''
+    Description: Gmail 16-letter app password (no spaces) or SES SMTP password. Never your normal Google password.
+    AllowedPattern: '^[^"\\$`]*$'
+    ConstraintDescription: No quotes, backslash, $ or backtick.
+  MailFrom:
+    Type: String
+    Default: ''
+    Description: Sender address. For Gmail use the same Gmail address; for SES a verified identity.
+  AiEnabled:
+    Type: String
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Needs Amazon Nova Lite model access enabled in the Bedrock console (Mumbai). Without it the app falls back to citizen depth.
+  SeedDemoData:
+    Type: String
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: Adds demo reports (clearly labelled "demo data") at known waterlogging spots.
+  AlertRunKey:
+    Type: String
+    NoEcho: true
+    MinLength: 16
+    AllowedPattern: '^[A-Za-z0-9_-]+$'
+    Description: Any random string of 16+ letters/digits. EventBridge uses it to trigger the hourly alert run.
+    ConstraintDescription: 16+ characters, letters, digits, _ or - only.
+  InstanceType:
+    Type: String
+    Default: t3.micro
+    AllowedValues: [t3.micro, t3.small, t2.micro]
+    Description: t3.micro is Free Tier eligible in Mumbai.
+  ReleaseBaseUrl:
+    Type: String
+    Default: https://github.com/ShivamNishad999/jalmarg/releases/download/server-latest
+    Description: Where the server downloads jalmarg.jar and jalmarg-web.zip.
+
+Conditions:
+  IsUsEast1: !Equals [!Ref 'AWS::Region', us-east-1]
+
+Resources:
+  # ---------------------------------------------------------------- storage + alerts
+  PhotoBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault: { SSEAlgorithm: AES256 }
+      OwnershipControls:
+        Rules: [{ ObjectOwnership: BucketOwnerEnforced }]
+
+  AlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: JalMarg
+
+  # ---------------------------------------------------------------- server permissions (no access keys)
+  ServerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: ec2.amazonaws.com }
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        # lets you open a shell from the console (Session Manager) without SSH keys
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyName: jalmarg-app
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: BedrockVision
+                Effect: Allow
+                Action: [bedrock:InvokeModel, bedrock:InvokeModelWithResponseStream]
+                Resource: '*'
+              - Sid: ReportPhotos
+                Effect: Allow
+                Action: [s3:PutObject, s3:GetObject, s3:DeleteObject]
+                Resource: !Sub '${PhotoBucket.Arn}/*'
+              - Sid: AlertTopic
+                Effect: Allow
+                Action: [sns:Publish, sns:Subscribe]
+                Resource: !Ref AlertTopic
+              - Sid: AlertSubscriptions
+                Effect: Allow
+                Action: [sns:Unsubscribe, sns:GetSubscriptionAttributes, sns:SetSubscriptionAttributes]
+                Resource: '*'
+
+  ServerProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles: [!Ref ServerRole]
+
+  ServerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: JalMarg API (reached through CloudFront)
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 8091
+          ToPort: 8091
+          CidrIp: 0.0.0.0/0
+          Description: CloudFront to Spring Boot
+
+  # ---------------------------------------------------------------- server
+  ServerInstance:
+    Type: AWS::EC2::Instance
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT25M
+    Properties:
+      ImageId: '{{resolve:ssm:/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64}}'
+      InstanceType: !Ref InstanceType
+      IamInstanceProfile: !Ref ServerProfile
+      SecurityGroupIds: [!GetAtt ServerSecurityGroup.GroupId]
+      MetadataOptions:
+        HttpTokens: required
+        HttpPutResponseHopLimit: 2
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs: { VolumeSize: 16, VolumeType: gp3, Encrypted: true }
+      Tags:
+        - { Key: Name, Value: !Sub 'jalmarg-${AWS::StackName}' }
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -uxo pipefail
+          exec > >(tee -a /var/log/jalmarg-setup.log) 2>&1
+
+          dnf install -y java-21-amazon-corretto-headless unzip aws-cfn-bootstrap
+
+          # t3.micro has 1 GB RAM: add 1 GB swap so the JVM never gets killed
+          if [ ! -f /swapfile ]; then
+            dd if=/dev/zero of=/swapfile bs=1M count=1024
+            chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
+            echo '/swapfile swap swap defaults 0 0' >> /etc/fstab
+          fi
+
+          useradd --system --home-dir /opt/jalmarg --shell /sbin/nologin jalmarg || true
+          mkdir -p /opt/jalmarg/data/dem /opt/jalmarg/uploads /opt/jalmarg/web
+
+          # Configuration. Secrets live only in this root-only file, never in git or logs.
+          umask 077
+          cat > /etc/jalmarg.env <<'ENVEOF'
+          PORT="8091"
+          AWS_REGION="${AWS::Region}"
+          BEDROCK_REGION="${AWS::Region}"
+          AI_ENABLED="${AiEnabled}"
+          S3_BUCKET="${PhotoBucket}"
+          SNS_TOPIC_ARN="${AlertTopic}"
+          ALERT_INTERNAL_SCHEDULER="false"
+          ALERT_RUN_KEY="${AlertRunKey}"
+          SEED_ENABLED="${SeedDemoData}"
+          JALMARG_DEV_OTP="false"
+          ADMIN_EMAIL="${AdminEmail}"
+          ADMIN_PASSWORD="${AdminPassword}"
+          MAIL_HOST="${MailHost}"
+          MAIL_PORT="${MailPort}"
+          MAIL_USERNAME="${MailUsername}"
+          MAIL_PASSWORD="${MailPassword}"
+          MAIL_FROM="${MailFrom}"
+          WEB_DIR="/opt/jalmarg/web"
+          LOCAL_UPLOAD_DIR="/opt/jalmarg/uploads"
+          ENVEOF
+          sed -i 's/^ *//' /etc/jalmarg.env
+          # no SMTP username = no mail settings (the app then reports email as not configured)
+          grep -q '^MAIL_USERNAME=""' /etc/jalmarg.env && sed -i '/^MAIL_/d' /etc/jalmarg.env
+          sed -i '/^MAIL_FROM=""/d' /etc/jalmarg.env
+          umask 022
+
+          # Update script: fetch the latest jar + web app and restart (run it again after each new build)
+          cat > /opt/jalmarg/update.sh <<'UPDEOF'
+          #!/bin/bash
+          set -euo pipefail
+          BASE="${ReleaseBaseUrl}"
+          cd /opt/jalmarg
+          curl -fsSL -o jalmarg.jar.new "$BASE/jalmarg.jar"
+          curl -fsSL -o web.zip "$BASE/jalmarg-web.zip"
+          rm -rf web.new && mkdir web.new && unzip -q web.zip -d web.new && rm web.zip
+          mv jalmarg.jar.new jalmarg.jar
+          rm -rf web.old && mv web web.old && mv web.new web && rm -rf web.old
+          chown -R jalmarg:jalmarg /opt/jalmarg
+          systemctl restart jalmarg || true
+          echo "JalMarg updated"
+          UPDEOF
+          sed -i 's/^ *//' /opt/jalmarg/update.sh
+          chmod 755 /opt/jalmarg/update.sh
+
+          cat > /etc/systemd/system/jalmarg.service <<'SVCEOF'
+          [Unit]
+          Description=JalMarg backend
+          After=network-online.target
+          Wants=network-online.target
+
+          [Service]
+          User=jalmarg
+          WorkingDirectory=/opt/jalmarg
+          EnvironmentFile=/etc/jalmarg.env
+          ExecStart=/usr/bin/java -Xms256m -Xmx512m -XX:+UseSerialGC -jar /opt/jalmarg/jalmarg.jar
+          Restart=always
+          RestartSec=5
+
+          [Install]
+          WantedBy=multi-user.target
+          SVCEOF
+          sed -i 's/^ *//' /etc/systemd/system/jalmarg.service
+
+          # Copernicus DEM terrain tile for Delhi NCR from the AWS Open Data registry (no account needed)
+          aws s3 cp --no-sign-request --region eu-central-1 \
+            s3://copernicus-dem-30m/Copernicus_DSM_COG_10_N28_00_E077_00_DEM/Copernicus_DSM_COG_10_N28_00_E077_00_DEM.tif \
+            /opt/jalmarg/data/dem/ || echo "DEM tile download failed; terrain will show as unavailable"
+
+          /opt/jalmarg/update.sh
+          systemctl daemon-reload
+          systemctl enable --now jalmarg
+
+          # Tell CloudFormation whether the API came up (up to ~6 minutes)
+          ok=1
+          for i in $(seq 1 72); do
+            if curl -fs http://localhost:8091/api/health > /dev/null; then ok=0; break; fi
+            sleep 5
+          done
+          /opt/aws/bin/cfn-signal -e $ok --stack ${AWS::StackName} --resource ServerInstance --region ${AWS::Region}
+
+  ServerAddress:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      InstanceId: !Ref ServerInstance
+
+  # ---------------------------------------------------------------- HTTPS in front (CloudFront)
+  ApiCachePolicy:
+    Type: AWS::CloudFront::CachePolicy
+    Properties:
+      CachePolicyConfig:
+        Name: !Sub 'jalmarg-no-cache-${AWS::StackName}'
+        Comment: Nothing cached by default; Authorization header reaches the API
+        DefaultTTL: 0
+        MinTTL: 0
+        MaxTTL: 1
+        ParametersInCacheKeyAndForwardedToOrigin:
+          EnableAcceptEncodingGzip: true
+          EnableAcceptEncodingBrotli: true
+          HeadersConfig:
+            HeaderBehavior: whitelist
+            Headers: [Authorization]
+          CookiesConfig:
+            CookieBehavior: none
+          QueryStringsConfig:
+            QueryStringBehavior: all
+
+  Cdn:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: JalMarg
+        HttpVersion: http2and3
+        PriceClass: PriceClass_200
+        Origins:
+          - Id: jalmarg-server
+            # public DNS name of the Elastic IP (CloudFront origins must be DNS names)
+            DomainName: !If
+              - IsUsEast1
+              - !Sub
+                - 'ec2-${Dashed}.compute-1.amazonaws.com'
+                - Dashed: !Join ['-', !Split ['.', !Ref ServerAddress]]
+              - !Sub
+                - 'ec2-${Dashed}.${AWS::Region}.compute.amazonaws.com'
+                - Dashed: !Join ['-', !Split ['.', !Ref ServerAddress]]
+            CustomOriginConfig:
+              HTTPPort: 8091
+              OriginProtocolPolicy: http-only
+              OriginReadTimeout: 60
+              OriginKeepaliveTimeout: 5
+        DefaultCacheBehavior:
+          TargetOriginId: jalmarg-server
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD, OPTIONS, PUT, PATCH, POST, DELETE]
+          CachedMethods: [GET, HEAD]
+          Compress: true
+          CachePolicyId: !Ref ApiCachePolicy
+          # Managed-AllViewerExceptHostHeader
+          OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac
+
+  # ---------------------------------------------------------------- hourly alert run (EventBridge)
+  AlertConnection:
+    Type: AWS::Events::Connection
+    Properties:
+      AuthorizationType: API_KEY
+      AuthParameters:
+        ApiKeyAuthParameters:
+          ApiKeyName: X-Jalmarg-Key
+          ApiKeyValue: !Ref AlertRunKey
+
+  AlertDestination:
+    Type: AWS::Events::ApiDestination
+    Properties:
+      ConnectionArn: !GetAtt AlertConnection.Arn
+      InvocationEndpoint: !Sub 'https://${Cdn.DomainName}/api/alerts/run'
+      HttpMethod: POST
+      InvocationRateLimitPerSecond: 1
+
+  AlertSchedulerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: events.amazonaws.com }
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: invoke-alert-run
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: events:InvokeApiDestination
+                Resource: !GetAtt AlertDestination.Arn
+
+  HourlyAlertRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: JalMarg - check rain + live reports and send alerts every hour
+      ScheduleExpression: rate(1 hour)
+      State: ENABLED
+      Targets:
+        - Id: jalmarg-alert-run
+          Arn: !GetAtt AlertDestination.Arn
+          RoleArn: !GetAtt AlertSchedulerRole.Arn
+
+Outputs:
+  AppUrl:
+    Description: Open this in a browser, and put it in the Android app (Profile > Server address)
+    Value: !Sub 'https://${Cdn.DomainName}'
+  HealthCheck:
+    Description: Should show JSON with "database":"UP"
+    Value: !Sub 'https://${Cdn.DomainName}/api/health'
+  PhotoBucketName:
+    Value: !Ref PhotoBucket
+  AlertTopicArn:
+    Value: !Ref AlertTopic
+  ServerInstanceId:
+    Description: 'To update after a new build: EC2 > this instance > Connect > Session Manager, then run: sudo /opt/jalmarg/update.sh'
+    Value: !Ref ServerInstance
