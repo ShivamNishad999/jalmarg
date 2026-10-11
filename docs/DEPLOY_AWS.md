@@ -1,4 +1,46 @@
-# Deploying JalMarg on AWS (Free Tier, ~45 minutes)
+# Deploying JalMarg on AWS
+
+## Fast path: one CloudFormation stack (about 20 minutes, mostly waiting)
+
+Everything is created by `infra/jalmarg-aws.yaml`. No AWS access keys are needed anywhere:
+the server gets permissions from an IAM role, and secrets are typed only into the CloudFormation form.
+
+**What it creates (Mumbai, ap-south-1):** EC2 t3.micro (Amazon Linux 2023 + Amazon Corretto 21) running the
+API and the web app, Elastic IP, CloudFront (HTTPS), private S3 bucket for photos, SNS topic for alerts,
+EventBridge hourly alert run, IAM role for Bedrock/S3/SNS, and the Copernicus DEM tile from AWS Open Data.
+
+1. **Bedrock model access** — Console → region **Asia Pacific (Mumbai)** → Amazon Bedrock → *Model access* →
+   enable **Amazon Nova Lite**. (Skip and set *Use Amazon Bedrock* to `false` if you cannot; the app then uses the citizen's depth.)
+2. **Email for sign-up codes** — Gmail: Google Account → Security → 2-Step Verification ON →
+   <https://myaccount.google.com/apppasswords> → create "JalMarg" → copy the 16 letters (no spaces).
+   Never use your normal Google password.
+3. **Create the stack** — Console → CloudFormation (Mumbai) → *Create stack* → *With new resources* →
+   *Upload a template file* → `infra/jalmarg-aws.yaml` → stack name `jalmarg` → fill in:
+   - Admin email / password (this account can sign in at once and make authority users)
+   - SMTP: host `smtp.gmail.com`, port `587`, username = your Gmail, password = the app password, From = your Gmail
+   - Alert run key: any 16+ random letters/digits
+   → Next → Next → tick *I acknowledge that AWS CloudFormation might create IAM resources* → **Submit**.
+4. Wait for **CREATE_COMPLETE** (15–20 min; CloudFront is the slow part). Open the **Outputs** tab:
+   - **AppUrl** — the website. Put the same URL in the Android app (Profile → Server address → Save & test).
+   - **HealthCheck** — should show `"database":"UP"`.
+5. **Optional, APK with the address built in:** GitHub repo → Settings → Secrets and variables → Actions →
+   *Variables* → `API_BASE` = the AppUrl. The next APK build starts with that server.
+
+**Update after new code:** push to GitHub, wait for the *Server build (AWS)* workflow, then EC2 → instance →
+*Connect* → *Session Manager* → `sudo /opt/jalmarg/update.sh`.
+
+**Logs:** Session Manager → `sudo journalctl -u jalmarg -n 200` (setup log: `/var/log/jalmarg-setup.log`).
+
+**If the stack fails:** CloudFormation → *Events* shows the reason. Common ones: no default VPC in the account,
+or the server could not start within 6 minutes (check the setup log by re-creating with *Preserve successfully provisioned resources*).
+
+**Cost:** EC2 t3.micro, 16 GB disk and CloudFront are within the 12-month Free Tier; Bedrock Nova Lite costs a
+fraction of a rupee per photo. Delete the stack after the event to stop all charges (the photo bucket is kept; empty and delete it by hand).
+
+---
+
+## Manual setup (reference)
+
 
 Region: **Asia Pacific (Mumbai) `ap-south-1`** for everything unless noted.
 Order: 1 Bedrock → 2 S3 → 3 SNS → 4 RDS (optional) → 5 IAM role → 6 EC2 backend → 7 CloudFront (HTTPS) → 8 Amplify frontend → 9 EventBridge.

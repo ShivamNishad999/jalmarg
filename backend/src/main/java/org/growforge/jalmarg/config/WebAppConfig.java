@@ -46,8 +46,10 @@ public class WebAppConfig implements WebMvcConfigurer {
                 .addResolver(new PathResourceResolver() {
                     @Override
                     protected Resource getResource(String path, Resource location) throws IOException {
+                        // "/" (and any folder path) is the app itself
+                        if (path.isEmpty() || path.endsWith("/")) return location.createRelative("index.html");
                         Resource r = location.createRelative(path);
-                        if (r.exists() && r.isReadable()) return r;
+                        if (r.exists() && r.isReadable() && r.getFile().isFile()) return r;
                         // never answer API or actuator calls with the web page
                         if (path.startsWith("api/") || path.startsWith("actuator")) return null;
                         // files with an extension that do not exist are real 404s
