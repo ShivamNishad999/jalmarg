@@ -32,6 +32,8 @@ public class MunicipalAuthService {
     private final MunicipalUserRepository userRepo;
     private final AuditEventRepository auditRepo;
     private final String configuredAdminKey;
+    /** Password for the seeded staff accounts on a deployed server (MUNICIPAL_PASSWORD). Empty = local dev defaults. */
+    private final String deployedStaffPassword;
     private final org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder passwordEncoder =
             new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder(12);
 
@@ -71,11 +73,19 @@ public class MunicipalAuthService {
         }
     }
 
+    /** Tests and local tools: dev default passwords. */
+    public MunicipalAuthService(MunicipalUserRepository userRepo, AuditEventRepository auditRepo, String configuredAdminKey) {
+        this(userRepo, auditRepo, configuredAdminKey, "");
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
     public MunicipalAuthService(
             MunicipalUserRepository userRepo,
             AuditEventRepository auditRepo,
-            @Value("${jalmarg.authority.admin-key:${jalmarg.alerts.run-key:jalmarg-dev-admin-key-2026}}") String configuredAdminKey
+            @Value("${jalmarg.authority.admin-key:${jalmarg.alerts.run-key:jalmarg-dev-admin-key-2026}}") String configuredAdminKey,
+            @Value("${jalmarg.authority.staff-password:}") String deployedStaffPassword
     ) {
+        this.deployedStaffPassword = deployedStaffPassword == null ? "" : deployedStaffPassword.trim();
         this.userRepo = userRepo;
         this.auditRepo = auditRepo;
         this.configuredAdminKey = configuredAdminKey;
@@ -85,13 +95,18 @@ public class MunicipalAuthService {
     @Transactional
     public void seedDefaultAccounts() {
         if (userRepo.count() > 0) return;
+        // On a public server the published dev passwords must not work: MUNICIPAL_PASSWORD replaces all three.
+        boolean deployed = !deployedStaffPassword.isEmpty();
+        String op = deployed ? deployedStaffPassword : "PwdOperator#2026";
+        String ad = deployed ? deployedStaffPassword : "NdmcAdmin#2026";
+        String vw = deployed ? deployedStaffPassword : "TrafficView#2026";
 
         List<MunicipalUser> defaults = List.of(
-                new MunicipalUser("operator_pwd", passwordEncoder.encode("PwdOperator#2026"), "bcrypt",
+                new MunicipalUser("operator_pwd", passwordEncoder.encode(op), "bcrypt",
                         "PWD Drainage Field Operator", "pwd.operator@delhi.gov.in", "PWD Central Drainage", Role.MUNICIPAL_OPERATOR),
-                new MunicipalUser("admin_ndmc", passwordEncoder.encode("NdmcAdmin#2026"), "bcrypt",
+                new MunicipalUser("admin_ndmc", passwordEncoder.encode(ad), "bcrypt",
                         "NDMC Emergency Center Admin", "ndmc.admin@delhi.gov.in", "NDMC Control Room", Role.MUNICIPAL_ADMIN),
-                new MunicipalUser("viewer_traffic", passwordEncoder.encode("TrafficView#2026"), "bcrypt",
+                new MunicipalUser("viewer_traffic", passwordEncoder.encode(vw), "bcrypt",
                         "Delhi Traffic Police Duty Officer", "traffic.duty@delhipolice.gov.in", "Delhi Traffic Police", Role.MUNICIPAL_VIEWER)
         );
 
