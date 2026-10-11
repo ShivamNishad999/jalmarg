@@ -90,8 +90,6 @@ eggs/
 # ------------------------------------------------------------------------------
 # IRDID dataset lacks an OSI-compliant open license; excluded from publication
 ml/datasets/
-# Large downloaded multi-year meteorological reanalysis raw extractions (>60MB)
-ml/artifacts/acquired_data/
 # Binary model weights
 *.pt
 *.pth
