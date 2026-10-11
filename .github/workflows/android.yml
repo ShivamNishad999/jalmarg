@@ -37,8 +37,8 @@ jobs:
       # to the deployed backend URL so the app works out of the box. Users can also set it in the app (About > Server).
       - run: npm run build
         env:
-          VITE_API_BASE: ${{ vars.API_BASE }}
-          VITE_PUBLIC_URL: ${{ vars.PUBLIC_URL }}
+          VITE_API_BASE: ${{ vars.API_BASE || 'https://d32mtn7raxakpa.cloudfront.net' }}
+          VITE_PUBLIC_URL: ${{ vars.PUBLIC_URL || 'https://d32mtn7raxakpa.cloudfront.net' }}
 
       - run: npx cap sync android
 
@@ -61,7 +61,7 @@ jobs:
           name: JalMarg Android app (latest)
           body: |
             Install on Android: download JalMarg.apk on the phone, open it, allow "install unknown apps".
-            Then in the app: About → Server → enter the backend URL.
+            Server: https://d32mtn7raxakpa.cloudfront.net (built in; change it in Profile → Server address).
             Built from ${{ github.sha }}.
           prerelease: true
           files: JalMarg.apk
