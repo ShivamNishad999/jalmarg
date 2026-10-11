@@ -4,7 +4,8 @@
 # Passwords are typed here (hidden) and go straight to CloudFormation as NoEcho parameters.
 set -euo pipefail
 
-REGION=ap-south-1
+# Use the region CloudShell is open in (new AWS projects are tied to one region)
+REGION="${AWS_REGION:-${AWS_DEFAULT_REGION:-ap-south-1}}"
 STACK=jalmarg
 RAW=https://raw.githubusercontent.com/ShivamNishad999/jalmarg/feat/android-app/infra/jalmarg-aws.yaml
 
